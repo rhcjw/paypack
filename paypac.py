@@ -1,11 +1,11 @@
 """
 PayPack - AI Agent 通用支付中间件
-v0.1.0 - 接入 Base Sepolia 测试网
-已支持：ETH 转账 / USDC 转账（模拟签名模式，待网络恢复可广播上链）
+v0.2.0 - 支持 x402 + AP2 双协议自动识别，可配置是否广播上链
 """
 
 import json
 from datetime import datetime, date, timezone
+from typing import Optional
 from web3 import Web3
 
 # ========== 连接 Base Sepolia 测试网 ==========
@@ -41,9 +41,15 @@ class DailyLimitExceededError(Exception):
 class AgentPay:
     """AI 代理支付客户端"""
 
-    def __init__(self, wallet_config=None, spend_limit_daily=10.0):
+    def __init__(
+        self,
+        wallet_config: Optional[dict] = None,
+        spend_limit_daily: float = 10.0,
+        broadcast: bool = False          # 新增：是否真实广播上链
+    ):
         self.wallet_config = wallet_config or {}
         self.spend_limit_daily = spend_limit_daily
+        self.broadcast = broadcast        # 保存广播开关
         self._today = date.today()
         self._spent_today = 0.0
 
@@ -66,13 +72,19 @@ class AgentPay:
     def auto_handle_402(self, response):
         """
         自动处理 HTTP 402 响应。
-        解析 x402 头，校验限额，根据币种选择 ETH 或 USDC 转账。
+        自动识别 x402 或 AP2 协议头，校验限额，根据币种选择 ETH 或 USDC 转账。
         """
         if response.status_code != 402:
             raise ValueError("仅支持处理 402 状态码")
 
-        # 1. 解析 x402 协议头
-        payment_info = self._parse_x402_headers(response.headers)
+        # 1. 自动识别协议头（x402 或 AP2）
+        headers = response.headers
+        if "X-402-Payee" in headers:
+            payment_info = self._parse_x402_headers(headers)
+        elif "X-AP2-Payee" in headers:
+            payment_info = self._parse_ap2_headers(headers)
+        else:
+            raise ValueError("无法识别的支付协议头，仅支持 x402 和 AP2")
 
         # 2. 提取付款信息
         payee = payment_info.get("payee")
@@ -117,10 +129,19 @@ class AgentPay:
             "network": headers.get("X-402-Network", "base-sepolia")
         }
 
+    def _parse_ap2_headers(self, headers):
+        """解析 AP2 协议响应头"""
+        return {
+            "payee": headers.get("X-AP2-Payee", ""),
+            "amount": headers.get("X-AP2-Amount", "0"),
+            "currency": headers.get("X-AP2-Currency", "USDC"),
+            "network": headers.get("X-AP2-Network", "base-sepolia")
+        }
+
     def _execute_eth_transfer(self, to_address, amount_eth):
         """
-        构造并签名 ETH 转账交易（当前为模拟模式，不广播）。
-        若要真正上链，取消下面两行注释即可。
+        构造并签名 ETH 转账交易。
+        根据 self.broadcast 决定是否广播上链。
         """
         if not self.private_key or not self.address:
             raise ValueError("请提供私钥和地址")
@@ -144,35 +165,34 @@ class AgentPay:
         except Exception:
             txn['gasPrice'] = w3.eth.gas_price
 
-        # 用真实私钥签名
+        # 签名
         signed_txn = w3.eth.account.sign_transaction(txn, self.private_key)
 
-        # ---- 广播交易（取消下面注释即可上链） ----
-        # tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-        # receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-        # return {
-        #     "tx_hash": receipt.transactionHash.hex(),
-        #     "block_number": receipt.blockNumber,
-        #     "status": "success" if receipt.status == 1 else "failed"
-        # }
-
-        return {
-            "tx_hash": signed_txn.hash.hex(),
-            "status": "signed (not broadcasted)"
-        }
+        # 根据 broadcast 决定是否广播
+        if self.broadcast:
+            tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+            return {
+                "tx_hash": receipt.transactionHash.hex(),
+                "block_number": receipt.blockNumber,
+                "status": "success" if receipt.status == 1 else "failed"
+            }
+        else:
+            return {
+                "tx_hash": signed_txn.hash.hex(),
+                "status": "signed (not broadcasted)"
+            }
 
     def _execute_usdc_transfer(self, to_address, amount_usdc):
         """
-        构造并签名 USDC 转账交易（当前为模拟模式，不广播）。
-        USDC 精度为 6 位小数，amount_usdc 单位为美元。
+        构造并签名 USDC 转账交易。
+        根据 self.broadcast 决定是否广播上链。
         """
         if not self.private_key or not self.address:
             raise ValueError("请提供私钥和地址")
 
-        # USDC 有 6 位小数，例如 0.001 USDC = 1000 单位
         amount_raw = int(amount_usdc * 1_000_000)
 
-        # 构造合约调用交易
         txn = self.usdc_contract.functions.transfer(
             Web3.to_checksum_address(to_address),
             amount_raw
@@ -183,7 +203,6 @@ class AgentPay:
             "nonce": w3.eth.get_transaction_count(self.address),
         })
 
-        # 动态 gas 价格
         try:
             fee_data = w3.eth.fee_history(1, 'latest')
             max_priority = w3.eth.max_priority_fee
@@ -193,22 +212,21 @@ class AgentPay:
         except Exception:
             txn['gasPrice'] = w3.eth.gas_price
 
-        # 签名交易
         signed_txn = w3.eth.account.sign_transaction(txn, self.private_key)
 
-        # ---- 广播交易（取消下面注释即可上链） ----
-        # tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-        # receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-        # return {
-        #     "tx_hash": receipt.transactionHash.hex(),
-        #     "block_number": receipt.blockNumber,
-        #     "status": "success" if receipt.status == 1 else "failed"
-        # }
-
-        return {
-            "tx_hash": signed_txn.hash.hex(),
-            "status": "signed (not broadcasted)"
-        }
+        if self.broadcast:
+            tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+            return {
+                "tx_hash": receipt.transactionHash.hex(),
+                "block_number": receipt.blockNumber,
+                "status": "success" if receipt.status == 1 else "failed"
+            }
+        else:
+            return {
+                "tx_hash": signed_txn.hash.hex(),
+                "status": "signed (not broadcasted)"
+            }
 
     def send(self, to, amount, currency="ETH"):
         """直接发起一笔纳米支付"""
@@ -234,11 +252,17 @@ class AgentPay:
 # ========== 自测代码 ==========
 if __name__ == "__main__":
     # ===== 测试配置 =====
-    # ⚠️ 重要提示：以下私钥和地址仅用于 Base Sepolia 测试网，切勿在主网使用！
     TEST_PRIVATE_KEY = "0x6fd8aeba2983ea3eade0f68165376631d285827e74bcb69282c6783d6fb1b356"
     TEST_ADDRESS = "0x9cbF3Ca5185Ca55C804c2c4b726De212A17734F8"
 
-    # ===== 模拟 HTTP 402 响应（ETH 支付） =====
+    # ----- 模拟模式（不广播） -----
+    print("===== 模拟模式（broadcast=False） =====")
+    pay_sim = AgentPay(
+        wallet_config={"private_key": TEST_PRIVATE_KEY, "address": TEST_ADDRESS},
+        spend_limit_daily=0.001,
+        broadcast=False
+    )
+
     class MockResponseETH:
         status_code = 402
         headers = {
@@ -248,36 +272,15 @@ if __name__ == "__main__":
             "X-402-Network": "base-sepolia"
         }
 
-    pay_eth = AgentPay(
-        wallet_config={
-            "private_key": TEST_PRIVATE_KEY,
-            "address": TEST_ADDRESS
-        },
-        spend_limit_daily=0.001
-    )
+    receipt_eth_sim = pay_sim.auto_handle_402(MockResponseETH())
+    print("✅ ETH 签名（模拟）:", json.dumps(receipt_eth_sim, indent=2, ensure_ascii=False))
 
-    receipt_eth = pay_eth.auto_handle_402(MockResponseETH())
-    print("✅ ETH 签名交易成功！（模拟模式）")
-    print(json.dumps(receipt_eth, indent=2, ensure_ascii=False))
-
-    # ===== 模拟 HTTP 402 响应（USDC 支付） =====
-    class MockResponseUSDC:
-        status_code = 402
-        headers = {
-            "X-402-Payee": TEST_ADDRESS,
-            "X-402-Amount": "0.001",
-            "X-402-Currency": "USDC",
-            "X-402-Network": "base-sepolia"
-        }
-
-    pay_usdc = AgentPay(
-        wallet_config={
-            "private_key": TEST_PRIVATE_KEY,
-            "address": TEST_ADDRESS
-        },
-        spend_limit_daily=0.01
-    )
-
-    receipt_usdc = pay_usdc.auto_handle_402(MockResponseUSDC())
-    print("\n✅ USDC 签名交易成功！（模拟模式）")
-    print(json.dumps(receipt_usdc, indent=2, ensure_ascii=False))
+    # ----- 如果测试币就绪，可以打开广播 -----
+    # print("===== 真实广播（broadcast=True） =====")
+    # pay_real = AgentPay(
+    #     wallet_config={"private_key": TEST_PRIVATE_KEY, "address": TEST_ADDRESS},
+    #     spend_limit_daily=0.001,
+    #     broadcast=True
+    # )
+    # receipt_eth_real = pay_real.auto_handle_402(MockResponseETH())
+    # print("✅ ETH 上链:", json.dumps(receipt_eth_real, indent=2, ensure_ascii=False))
