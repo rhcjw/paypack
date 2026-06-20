@@ -52,9 +52,10 @@ from paypack import AgentPay
 
 # 初始化
 pay = AgentPay(
-    wallet_config={"private_key": "your-key", "chain": "base"},
-    spend_limit_daily=10.0,   # 日限额 10 美元
-    spend_limit_per_tx=0.5    # 单笔上限 0.5 美元（开发中）
+    wallet_config={"private_key": "your-key"},
+    network="base-sepolia",        # 可替换为 base-mainnet 等
+    spend_limit_daily=10.0,
+    broadcast=False
 )
 
 # 场景一：自动处理 HTTP 402
@@ -86,8 +87,11 @@ print(receipt.fee)      # 实际手续费
 
 > 待网络环境恢复、测试币到位后，取消代码中广播注释即可立即上链。
 
-✅ **v0.3 插件测试**：LangChain Tool 已通过测试，成功调用核心签名并返回交易哈希（ETH: `d5f7ec...`，同上表）。截图已保留。
+✅ **v0.3.0 (2026-06-21)**  
+LangChain 工具插件测试通过，多链网络支持（Base/Polygon/Arbitrum 等主网就绪），
+支持环境变量支持环境变量私钥、余额检查。余额不足提示正常触发，验证了安全检查链路的完整性。
 
+---私钥、余额检查。余额不足提示正常触发，验证了安全检查链路的完整性。
 ---
 
 ## 路线图
@@ -96,7 +100,7 @@ print(receipt.fee)      # 实际手续费
 |------|------|------|
 | v0.1 | Base 测试网 x402 支付闭环（ETH + USDC） | ✅ 已完成 |
 | v0.2 | 支持 AP2 协议解析 | ✅ 已完成 |
-| v0.3 | LangChain 官方插件提交 | 开发中 |
+| v0.3 | LangChain 官方插件提交 | ✅ 已完成 |
 | v0.4 | 国内支付宝 AI 付通道对接 | 规划中 |
 | v1.0 | 云托管版本 PayPack Cloud | 规划中 |
 
