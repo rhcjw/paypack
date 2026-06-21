@@ -98,6 +98,11 @@ print(receipt.fee)
 LangChain 工具插件测试通过，多链网络支持（Base/Polygon/Arbitrum 等主网就绪），支持环境变量私钥、余额检查。余额不足提示正常触发，验证了安全检查链路的完整性。
 ![余额不足测试](https://gitee.com/rhcjw_com/paypack/raw/master/insufficient-funds-error.gif)
 
+> 📌 **链上广播就绪**：已在 Sepolia 测试网持有 0.531 ETH（交易哈希：
+> `0x672e4da5934bae3c178ffbdfd4ff65e5e518fd38ed5be7137d8856f88c72d43f`），
+> `broadcast=True` 参数已就位。因当前网络环境限制（RPC 节点连接超时），
+> 链上广播待网络通畅后立即执行。届时运行 `python langchain_tool.py` 即可一次上链。
+
 ## 路线图
 
 | 阶段 | 目标 | 状态 |
