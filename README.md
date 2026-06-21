@@ -1,4 +1,6 @@
-这样不就对了吗？# PayPack
+# PayPack
+
+**作者**：ronghua (Copyright 2026 PayPack Authors)
 
 > AI 代理的通用支付中间件 —— 一行代码，让 AI 完成机器对机器的自动付款。
 
@@ -26,6 +28,7 @@ AI 代理应用
      │
      ▼
   底层结算网络（Solana / Base / 支付宝AI付 等）
+
 ```
 
 PayPack 不发明新协议，而是把散落在各处的底层能力封装成一个 agent.pay()。
@@ -93,6 +96,7 @@ print(receipt.fee)
 ✅ **v0.3.0 (2026-06-21)**
 
 LangChain 工具插件测试通过，多链网络支持（Base/Polygon/Arbitrum 等主网就绪），支持环境变量私钥、余额检查。余额不足提示正常触发，验证了安全检查链路的完整性。
+![余额不足测试](https://gitee.com/rhcjw_com/paypack/raw/master/insufficient-funds-error.gif)
 
 ## 路线图
 
