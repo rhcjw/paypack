@@ -1,3 +1,5 @@
+**作者：ronghua**
+
 # PayPack
 
 **作者**：ronghua (Copyright 2026 PayPack Authors)
