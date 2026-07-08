@@ -55,7 +55,8 @@ PayPack doesn't invent new protocols. It wraps scattered capabilities into a sin
 ## Features
 
 - **Multi-Protocol**: Supports both x402 and AP2 with automatic detection
-- **Nano-Payment Optimized**: Built for sub-$0.01 transactions with gas estimation and batch settlement
+- **Signer Abstraction**: Pluggable signing — LocalSigner for dev, AWSKMSSigner for production (private key never leaves HSM)
+- **Nano-Payment Optimized**: Built for sub-$0.01 transactions with ERC-4337 batch settlement to save gas
 - **Security Fuse**: Daily spend limits, balance checks, auditable receipts
 - **Full Audit Trail**: Every payment generates a queryable JSON receipt
 - **LangChain Native**: Drop-in `PayPackTool` for LangChain agents
@@ -66,10 +67,10 @@ PayPack doesn't invent new protocols. It wraps scattered capabilities into a sin
 ## Installation
 
 ```bash
-pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.3.0-py3-none-any.whl
+pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.4.0-py3-none-any.whl
 ```
 
-> **Note**: The core `paypack` SDK must be installed separately. See [paypack.py](paypack.py).
+> **Note**: Includes the full `paypack` SDK (core + signer + nanopay).
 
 ---
 
