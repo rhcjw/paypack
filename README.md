@@ -67,7 +67,7 @@ PayPack doesn't invent new protocols. It wraps scattered capabilities into a sin
 ## Installation
 
 ```bash
-pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.4.0-py3-none-any.whl
+pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.5.0-py3-none-any.whl
 ```
 
 > **Note**: Includes the full `paypack` SDK (core + signer + nanopay).
@@ -144,12 +144,14 @@ print(result)
 
 ✅ **v0.4.0 (2026-07-08)** — Signer abstraction (LocalSigner + AWSKMSSigner), ERC-4337 batch settlement (Batcher + Bundler)
 
+✅ **v0.5.0 (2026-07-08)** — RPC failover (multi-node auto-switch), transaction retry (RBF + exponential backoff), limit persistence (Redis/SQLite)
+
 | Currency | Amount | Offline-Signed TX Hash |
 |----------|--------|------------------------|
 | ETH | 0.0001 ETH | `d5f7ec94342c26a132289a9898ffd4885010089d1ddba19951117618a3992127` |
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
 
-> 📌 **Ready for mainnet broadcast**: `broadcast=True` parameter is in place.
+> 📌 **Production-ready**: RPC failover, retry, persistent limits, KMS signing — all in place.
 
 ## Roadmap
 
@@ -159,7 +161,8 @@ print(result)
 | v0.2 | AP2 protocol support | ✅ Done |
 | v0.3 | LangChain plugin release | ✅ Done |
 | v0.4 | Signer abstraction + ERC-4337 batch settlement | ✅ Done |
-| v0.5 | Alipay AI Pay integration | 🚧 Planned |
+| v0.5 | RPC failover + retry + limit persistence | ✅ Done |
+| v0.6 | Alipay AI Pay integration | 🚧 Planned |
 | v1.0 | PayPack Cloud (hosted service) | 🚧 Planned |
 
 ---
