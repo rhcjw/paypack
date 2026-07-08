@@ -1,5 +1,5 @@
 """
-PayPack - AI Agent 通用支付中间件 v0.4.0
+PayPack - AI Agent 通用支付中间件 v0.5.0
 """
 
 from paypack.core import (
@@ -14,6 +14,9 @@ from paypack.core import (
 )
 from paypack.signer import Signer, LocalSigner, AWSKMSSigner
 from paypack.nanopay import ERC4337Batcher, BundlerClient
+from paypack.providers import FailoverProvider, create_failover_w3
+from paypack.retry import RetryConfig, broadcast_with_retry, rbf_resend
+from paypack.limits import LimitStore, InMemoryStore, RedisStore, SQLiteStore, create_limit_store
 
 __all__ = [
     "AgentPay",
@@ -23,6 +26,16 @@ __all__ = [
     "AWSKMSSigner",
     "ERC4337Batcher",
     "BundlerClient",
+    "FailoverProvider",
+    "create_failover_w3",
+    "RetryConfig",
+    "broadcast_with_retry",
+    "rbf_resend",
+    "LimitStore",
+    "InMemoryStore",
+    "RedisStore",
+    "SQLiteStore",
+    "create_limit_store",
     "DEFAULT_NETWORKS",
     "USDC_ABI",
     "ENTRY_POINT_ADDRESS",
