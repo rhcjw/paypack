@@ -8,7 +8,7 @@ from typing import Optional, Type
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 
-from paypack import AgentPay, create_agent_pay
+from paypack import AgentPay, LocalSigner, Signer
 
 
 class PaymentInput(BaseModel):
@@ -19,7 +19,7 @@ class PaymentInput(BaseModel):
 
 
 class PayPackTool(BaseTool):
-    """AI Agent 纳米支付工具（支持多链和广播模式）"""
+    """AI Agent 纳米支付工具（支持 Signer 依赖注入、多链和广播模式）"""
     name: str = "paypack_payment"
     description: str = (
         "当 AI 代理需要向某个地址付款时调用此工具。"
@@ -34,21 +34,27 @@ class PayPackTool(BaseTool):
     network: str = Field(default="base-sepolia", description="网络名称，如 base-mainnet, ethereum-mainnet")
     broadcast: bool = Field(default=False, description="是否真实广播上链（False=仅签名）")
 
-    def _run(self, to: str, amount: float, currency: str = "USDC") -> str:
-        """同步执行支付（返回友好文本给 AI）"""
+    def _get_agent_pay(self) -> AgentPay:
+        """根据配置创建 AgentPay 实例"""
         effective_private_key = self.private_key or os.getenv("PRIVATE_KEY")
-        if not effective_private_key:
-            return "错误：未配置钱包私钥，请设置 private_key 或环境变量 PRIVATE_KEY"
+        if effective_private_key:
+            signer = LocalSigner(private_key=effective_private_key)
+        else:
+            raise ValueError("未配置钱包私钥，请设置 private_key 或环境变量 PRIVATE_KEY")
 
-        pay = AgentPay(
-            wallet_config={
-                "private_key": effective_private_key,
-                "address": self.wallet_address or None
-            },
+        return AgentPay(
+            signer=signer,
             spend_limit_daily=self.spend_limit_daily,
             broadcast=self.broadcast,
-            network=self.network
+            network=self.network,
         )
+
+    def _run(self, to: str, amount: float, currency: str = "USDC") -> str:
+        """同步执行支付（返回友好文本给 AI）"""
+        try:
+            pay = self._get_agent_pay()
+        except ValueError as e:
+            return f"错误：{e}"
 
         try:
             receipt = pay.send(to=to, amount=amount, currency=currency)
@@ -58,7 +64,7 @@ class PayPackTool(BaseTool):
             daily_remaining = receipt.get("daily_remaining", 0)
 
             result_msg = (
-                f"✅ 支付成功！\n"
+                f"支付成功！\n"
                 f"币种: {receipt['currency']}\n"
                 f"金额: {receipt['amount']}\n"
                 f"交易哈希: {tx_hash}\n"
@@ -70,7 +76,7 @@ class PayPackTool(BaseTool):
             return result_msg
 
         except Exception as e:
-            return f"❌ 支付失败: {type(e).__name__} - {str(e)}"
+            return f"支付失败: {type(e).__name__} - {str(e)}"
 
     async def _arun(self, to: str, amount: float, currency: str = "USDC") -> str:
         """异步执行支付（暂用同步代替）"""
@@ -83,14 +89,21 @@ def create_paypack_tool(
     network: str = "base-sepolia",
     spend_limit_daily: float = 10.0,
     broadcast: bool = False,
+    signer: Optional[Signer] = None,
 ) -> PayPackTool:
-    """快速创建 PayPackTool 实例"""
+    """
+    快速创建 PayPackTool 实例。
+
+    Args:
+        private_key: 私钥（向后兼容）
+        signer: Signer 实例（推荐，支持 AWS KMS 等）
+    """
     return PayPackTool(
-        private_key=private_key,
-        wallet_address=wallet_address,
+        private_key=private_key or "",
+        wallet_address=wallet_address or "",
         network=network,
         spend_limit_daily=spend_limit_daily,
-        broadcast=broadcast
+        broadcast=broadcast,
     )
 
 

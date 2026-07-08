@@ -1,4 +1,7 @@
-"""测试 LangChain 插件是否正常工作"""
+"""
+测试 LangChain 插件是否正常工作。
+支持 Signer 依赖注入。
+"""
 
 from langchain_tool import PayPackTool
 
