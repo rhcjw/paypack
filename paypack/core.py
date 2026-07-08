@@ -219,9 +219,9 @@ class AgentPay:
             raise NetworkConfigError("network 参数必须是字符串或字典")
 
         if len(fallback_urls) > 1:
-            self.w3 = create_failover_w3(fallback_urls)
+            self.w3 = create_failover_w3(fallback_urls, request_kwargs={"timeout": 10})
         else:
-            self.w3 = Web3(Web3.HTTPProvider(fallback_urls[0]))
+            self.w3 = Web3(Web3.HTTPProvider(fallback_urls[0], request_kwargs={"timeout": 10}))
 
         if not self.w3.is_connected():
             raise NetworkConfigError(f"无法连接到任何 RPC 节点: {fallback_urls}")

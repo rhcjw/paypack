@@ -108,11 +108,11 @@ class FailoverProvider(HTTPProvider):
         ordered = healthy + unhealthy
         return [(i, self._rpc_urls[i]) for i in ordered]
 
-    def is_connected(self) -> bool:
+    def is_connected(self, show_traceback: bool = False) -> bool:
         """检查是否有任何可用节点。"""
         for _ in range(len(self._rpc_urls)):
             try:
-                return super().is_connected()
+                return super().is_connected(show_traceback)
             except Exception:
                 with self._lock:
                     self._unhealthy[self._active_index] = time.time()
