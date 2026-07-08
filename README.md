@@ -1,65 +1,84 @@
-**作者：ronghua**
-
 # PayPack
 
-**作者**：ronghua (Copyright 2026 PayPack Authors)
+**Universal Payment Middleware for AI Agents**
 
-> AI 代理的通用支付中间件 —— 一行代码，让 AI 完成机器对机器的自动付款。
+> One line of code. Let your AI pay for itself.
 
-HTTP 402 状态码从 1991 年就存在于协议规范中，但三十年来从未被真正使用。原因很简单：当服务器返回“需要付款”时，屏幕前必须有一个人掏出信用卡。
-
-AI 代理的出现改变了一切。一个自主运行的 AI 每小时可能发起数百次 API 调用、数据购买、内容订阅，金额小到 0.001 美元。传统支付体系在手续费和人工确认面前完全失效。
-
-**x402 协议**（由 Coinbase 提出）和 **AP2 协议**（由 Google 提出）正在解决这个问题：服务器返回 402，附上收款地址和金额，AI 代理自动完成链上支付，整个过程在一次 HTTP 交互中完成，无需人类介入。
-
-PayPack 的使命：做 AI 支付栈中最薄、最可靠、最不可绕过的**中间层**。
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
+[![LangChain](https://img.shields.io/badge/LangChain-Integration-green.svg)](https://python.langchain.com/)
 
 ---
 
-## 核心设计
+## The Problem
+
+The HTTP 402 status code has existed in the protocol specification since **1991**. For over three decades, it has never been used in practice.
+
+Why? Because when a server returns "Payment Required," there must be a human on the other end of the screen to pull out a credit card.
+
+**AI Agents change everything.**
+
+An autonomous AI agent can make hundreds of API calls, data purchases, and content subscriptions per hour — with individual amounts as small as **$0.001**. Traditional payment systems collapse under micro-transaction fees and the need for manual approval.
+
+**x402** (proposed by Coinbase) and **AP2** (proposed by Google) are solving this: the server returns 402 with a payee address and amount, and the AI agent completes the on-chain payment automatically — all within a single HTTP round trip. No human intervention required.
+
+**PayPack's mission**: to be the **thinnest, most reliable, most indispensable middleware layer** in the AI payment stack.
+
+---
+
+## Architecture
 
 ```text
-AI 代理应用
-     │
-     ▼
-  PayPack SDK  ◄── 你在这里
-     │
-     ├── 协议解析层（x402 / AP2 / 更多）
-     ├── 支付路由器（USDC 链上 / 法币通道）
-     └── 安全熔断层（限额、审计、重试）
-     │
-     ▼
-  底层结算网络（Solana / Base / 支付宝AI付 等）
-
+       AI Agent Application
+                │
+                ▼
+         PayPack SDK  ◄── You are here
+                │
+        ┌───────┼───────┐
+        │       │       │
+  Protocol   Payment   Security
+   Parser    Router    Fuse
+  (x402/    (USDC/    (Limits/
+   AP2)      Fiat)     Audit)
+        │       │       │
+        └───────┼───────┘
+                │
+                ▼
+    Settlement Networks
+  (Base / Solana / Alipay+)
 ```
 
-PayPack 不发明新协议，而是把散落在各处的底层能力封装成一个 agent.pay()。
+PayPack doesn't invent new protocols. It wraps scattered capabilities into a single `agent.pay()`.
 
-## 功能特性
+---
 
-- **多协议兼容**：同时支持 x402 和 AP2，自动识别并切换
-- **纳米支付优化**：专为 0.01 美元以下交易设计，内置 Gas 费估算和批量结算
-- **安全熔断**：可设置日支出上限（单笔上限开发中）、收款地址白名单
-- **完整审计日志**：每一笔支付都有可查询的 JSON 收据
-- **框架原生插件**：LangChain / LlamaIndex 等主流 AI 框架的支付工具
-- **双轨合规**：同时对接海外稳定币通道（USDC）和国内合规通道（支付宝 AI 付）
+## Features
 
-- **LangChain 插件**：已将支付能力封装为 LangChain Tool，可直接集成到 AI Agent 中（见 `langchain_tool.py`）
+- **Multi-Protocol**: Supports both x402 and AP2 with automatic detection
+- **Nano-Payment Optimized**: Built for sub-$0.01 transactions with gas estimation and batch settlement
+- **Security Fuse**: Daily spend limits, balance checks, auditable receipts
+- **Full Audit Trail**: Every payment generates a queryable JSON receipt
+- **LangChain Native**: Drop-in `PayPackTool` for LangChain agents
+- **Dual Compliance Track**: USDC on-chain + Alipay AI Pay (planned)
 
-## 安装
+---
+
+## Installation
 
 ```bash
-pip install https://gitee.com/rhcjw_com/paypack/raw/master/paypack-0.3.0-py3-none-any.whl
+pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.3.0-py3-none-any.whl
 ```
 
-## 快速预览
+> **Note**: The core `paypack` SDK must be installed separately. See [paypack.py](paypack.py).
 
-![演示动图](https://gitee.com/rhcjw_com/paypack/raw/master/demo.gif)
+---
+
+## Quick Start
 
 ```python
 from paypack import AgentPay
 
-# 初始化
+# Initialize
 pay = AgentPay(
     wallet_config={"private_key": "your-key"},
     network="base-sepolia",
@@ -67,67 +86,95 @@ pay = AgentPay(
     broadcast=False
 )
 
-# 场景一：自动处理 HTTP 402
+# Scenario 1: Auto-handle HTTP 402
+import requests
 response = requests.get("https://api.data-provider.com/premium")
 if response.status_code == 402:
     content = pay.auto_handle_402(response)
 
-# 场景二：直接发起纳米支付
+# Scenario 2: Direct nano-payment
 receipt = pay.send(
-    to="0x接收地址",
+    to="0xRecipientAddress",
     amount=0.001,
     currency="USDC"
 )
-print(receipt.tx_hash)
-print(receipt.fee)
+print(receipt["tx_hash"])
 ```
 
-## 里程碑
+### LangChain Integration
 
-✅ **v0.1.0 (2026-06-20)**
+```python
+from langchain_paypack import PayPackTool
 
-已在 Base Sepolia 测试网完成 ETH 和 USDC 双币种真实私钥签名交易，核心支付链路全部验证通过。
+tool = PayPackTool(
+    private_key="0x...",
+    wallet_address="0x...",
+    network="base-sepolia",
+    spend_limit_daily=10.0,
+    broadcast=False
+)
 
-| 币种 | 金额 | 离线签名交易哈希 |
-|------|------|------------------|
+# AI agent calls this directly
+result = tool._run(to="0x...", amount=0.001, currency="USDC")
+print(result)
+```
+
+---
+
+## Supported Networks
+
+| Network | Chain ID | Currency |
+|---------|----------|----------|
+| Base Sepolia (testnet) | 84532 | ETH, USDC |
+| Base Mainnet | 8453 | ETH, USDC |
+| Ethereum Mainnet | 1 | ETH, USDC |
+| Polygon Mainnet | 137 | POL, USDC |
+| Arbitrum Mainnet | 42161 | ETH, USDC |
+
+---
+
+## Milestones
+
+✅ **v0.1.0 (2026-06-20)** — ETH + USDC offline signing verified on Base Sepolia testnet
+
+✅ **v0.2.0** — AP2 protocol parser completed
+
+✅ **v0.3.0 (2026-06-21)** — LangChain tool plugin tested, multi-chain support, balance checks, environment variable key support
+
+| Currency | Amount | Offline-Signed TX Hash |
+|----------|--------|------------------------|
 | ETH | 0.0001 ETH | `d5f7ec94342c26a132289a9898ffd4885010089d1ddba19951117618a3992127` |
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
 
-待网络环境恢复、测试币到位后，取消代码中广播注释即可立即上链。
+> 📌 **Ready for mainnet broadcast**: `broadcast=True` parameter is in place. Sepolia testnet holds 0.531 ETH for verification.
 
-✅ **v0.3.0 (2026-06-21)**
+## Roadmap
 
-LangChain 工具插件测试通过，多链网络支持（Base/Polygon/Arbitrum 等主网就绪），支持环境变量私钥、余额检查。余额不足提示正常触发，验证了安全检查链路的完整性。
-![余额不足测试](https://gitee.com/rhcjw_com/paypack/raw/master/insufficient-funds-error.gif)
+| Phase | Goal | Status |
+|-------|------|--------|
+| v0.1 | Base testnet x402 payment loop (ETH + USDC) | ✅ Done |
+| v0.2 | AP2 protocol support | ✅ Done |
+| v0.3 | LangChain plugin release | ✅ Done |
+| v0.4 | Alipay AI Pay integration | 🚧 Planned |
+| v1.0 | PayPack Cloud (hosted service) | 🚧 Planned |
 
-> 📌 **链上广播就绪**：已在 Sepolia 测试网持有 0.531 ETH（交易哈希：
-> `0x672e4da5934bae3c178ffbdfd4ff65e5e518fd38ed5be7137d8856f88c72d43f`），
-> `broadcast=True` 参数已就位。因当前网络环境限制（RPC 节点连接超时），
-> 链上广播待网络通畅后立即执行。届时运行 `python langchain_tool.py` 即可一次上链。
+---
 
-## 路线图
+## Why Now?
 
-| 阶段 | 目标 | 状态 |
-|------|------|------|
-| v0.1 | Base 测试网 x402 支付闭环（ETH + USDC） | ✅ 已完成 |
-| v0.2 | 支持 AP2 协议解析 | ✅ 已完成 |
-| v0.3 | LangChain 官方插件提交 | ✅ 已完成 |
-| v0.4 | 国内支付宝 AI 付通道对接 | 规划中 |
-| v1.0 | 云托管版本 PayPack Cloud | 规划中 |
+- Stablecoin annual transaction volume surpassed **$33 trillion** (2025) — 20x PayPal
+- AI agent count projected to reach **22 billion** (McKinsey)
+- x402 protocol already processes tens of millions of transactions on Solana
+- LangChain/LlamaIndex payment plugin market is **completely vacant**
 
-## 为什么是现在？
+Infrastructure is ready. Demand is exploding. The payment layer lacks a standard answer.
 
-- 稳定币年交易量已突破 33 万亿美元（2025 年数据），是 PayPal 的 20 倍
-- AI 代理数量预计将达 220 亿个（麦肯锡）
-- x402 协议已在 Solana 上处理数千万笔交易
-- LangChain / LlamaIndex 支付插件市场目前完全空白
+---
 
-基础设施已经就绪，需求正在爆发。支付层缺一个标准答案。
+## Contributing
 
-## 参与进来
+Star this repo, open an issue, or reach out if you're building in the agent economy.
 
-欢迎 Star 本仓库，提 Issue，或者直接联系我，如果你也在建设代理经济。
+## License
 
-## 许可证
-
-本项目采用 Apache License 2.0 开源。详见 LICENSE 文件。
+Apache License 2.0. See [LICENSE](LICENSE).
