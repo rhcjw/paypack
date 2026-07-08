@@ -30,7 +30,6 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Intended Audience :: Developers",
-        "Framework :: LangChain",
     ],
     python_requires=">=3.10",
 )
