@@ -142,12 +142,14 @@ print(result)
 
 ✅ **v0.3.0 (2026-06-21)** — LangChain tool plugin tested, multi-chain support, balance checks, environment variable key support
 
+✅ **v0.4.0 (2026-07-08)** — Signer abstraction (LocalSigner + AWSKMSSigner), ERC-4337 batch settlement (Batcher + Bundler)
+
 | Currency | Amount | Offline-Signed TX Hash |
 |----------|--------|------------------------|
 | ETH | 0.0001 ETH | `d5f7ec94342c26a132289a9898ffd4885010089d1ddba19951117618a3992127` |
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
 
-> 📌 **Ready for mainnet broadcast**: `broadcast=True` parameter is in place. Sepolia testnet holds 0.531 ETH for verification.
+> 📌 **Ready for mainnet broadcast**: `broadcast=True` parameter is in place.
 
 ## Roadmap
 
@@ -156,7 +158,8 @@ print(result)
 | v0.1 | Base testnet x402 payment loop (ETH + USDC) | ✅ Done |
 | v0.2 | AP2 protocol support | ✅ Done |
 | v0.3 | LangChain plugin release | ✅ Done |
-| v0.4 | Alipay AI Pay integration | 🚧 Planned |
+| v0.4 | Signer abstraction + ERC-4337 batch settlement | ✅ Done |
+| v0.5 | Alipay AI Pay integration | 🚧 Planned |
 | v1.0 | PayPack Cloud (hosted service) | 🚧 Planned |
 
 ---
