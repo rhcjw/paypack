@@ -1,108 +1,88 @@
 # PayPack
 
-**Universal Payment Middleware for AI Agents**
+**AI Agent Universal Payment Middleware | AI Agent 通用支付中间件**
 
-> One line of code. Let your AI pay for itself.
+> 两行代码，让 AI 自己付钱。
+> Two lines of code. Let your AI pay for itself.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![LangChain](https://img.shields.io/badge/LangChain-Integration-green.svg)](https://python.langchain.com/)
+[![PyPI](https://img.shields.io/pypi/v/langchain-paypack.svg)](https://pypi.org/project/langchain-paypack/)
+[![Gitee](https://img.shields.io/badge/Gitee-Mirror-red.svg)](https://gitee.com/rhcjw_com/paypack)
 
 ---
 
-## The Problem
+## 为什么是 PayPack？| Why PayPack?
 
-The HTTP 402 status code has existed in the protocol specification since **1991**. For over three decades, it has never been used in practice.
+**PayPack is the ONLY payment middleware that supports x402/AP2 crypto payments AND Alipay/WeChat fiat payments.**
 
-Why? Because when a server returns "Payment Required," there must be a human on the other end of the screen to pull out a credit card.
+| 工具 | 支付方式 | 支持中国用户？ |
+|------|---------|---------------|
+| **Ampersend** | x402 + USDC | ❌ 不支持支付宝/微信 |
+| **GOAT** | 加密货币 | ❌ 不支持支付宝/微信 |
+| **Stripe Agent Toolkit** | Stripe（信用卡） | ❌ 仅限外币卡 |
+| **Nevermined** | x402 协议 | ❌ 不支持支付宝/微信 |
+| **Privy** | 钱包基础设施 | ❌ 不支持支付宝/微信 |
+| **PayPack** ✅ | x402/AP2 + USDC/ETH + **支付宝** | ✅ 开源免费 |
+| **PayPack WeChat** 🔒 | **微信支付 JSAPI** | ✅ 商业版 |
 
-**AI Agents change everything.**
-
-An autonomous AI agent can make hundreds of API calls, data purchases, and content subscriptions per hour — with individual amounts as small as **$0.001**. Traditional payment systems collapse under micro-transaction fees and the need for manual approval.
-
-**x402** (proposed by Coinbase) and **AP2** (proposed by Google) are solving this: the server returns 402 with a payee address and amount, and the AI agent completes the on-chain payment automatically — all within a single HTTP round trip. No human intervention required.
-
-**PayPack's mission**: to be the **thinnest, most reliable, most indispensable middleware layer** in the AI payment stack.
-
----
-
-## Architecture
-
-```text
-       AI Agent Application
-                │
-                ▼
-         PayPack SDK  ◄── You are here
-                │
-        ┌───────┼───────┐
-        │       │       │
-  Protocol   Payment   Security
-   Parser    Router    Fuse
-  (x402/    (USDC/    (Limits/
-   AP2)      Fiat)     Audit)
-        │       │       │
-        └───────┼───────┘
-                │
-                ▼
-    Settlement Networks
-  (Base / Solana / Alipay+)
-```
-
-PayPack doesn't invent new protocols. It wraps scattered capabilities into a single `agent.pay()`.
-
----
-
-## Features
-
-- **Multi-Protocol**: Supports both x402 and AP2 with automatic detection
-- **Signer Abstraction**: Pluggable signing — LocalSigner for dev, AWSKMSSigner for production (private key never leaves HSM)
-- **Nano-Payment Optimized**: Built for sub-$0.01 transactions with ERC-4337 batch settlement to save gas
-- **Security Fuse**: Daily spend limits, balance checks, auditable receipts
-- **Full Audit Trail**: Every payment generates a queryable JSON receipt
-- **LangChain Native**: Drop-in `PayPackTool` for LangChain agents
-- **Dual Compliance Track**: USDC on-chain + Alipay AI Pay (planned)
-
----
-
-## Installation
-
-```bash
-pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.5.0-py3-none-any.whl
-```
-
-> **Note**: Includes the full `paypack` SDK (core + signer + nanopay).
+当所有人在琢磨"怎么让 AI 用 USDC 付钱"时，PayPack 在想"怎么让 AI 用支付宝和微信付钱"。国内 13 亿人用支付宝和微信，不用 USDC。**这个市场，只有 PayPack 在做。**
 
 ---
 
 ## Quick Start
 
+### 链上支付（ETH / USDC）
+
 ```python
 from paypack import AgentPay
 
-# Initialize
 pay = AgentPay(
     wallet_config={"private_key": "your-key"},
     network="base-sepolia",
     spend_limit_daily=10.0,
-    broadcast=False
 )
 
-# Scenario 1: Auto-handle HTTP 402
+# AI 自动处理 HTTP 402 支付要求
 import requests
 response = requests.get("https://api.data-provider.com/premium")
 if response.status_code == 402:
     content = pay.auto_handle_402(response)
 
-# Scenario 2: Direct nano-payment
-receipt = pay.send(
-    to="0xRecipientAddress",
-    amount=0.001,
-    currency="USDC"
-)
+# 或直接发送支付
+receipt = pay.send(to="0xRecipientAddress", amount=0.001, currency="USDC")
 print(receipt["tx_hash"])
 ```
 
-### LangChain Integration
+### 支付宝支付（人民币）🏦
+
+```python
+from paypack.signer.alipay import AlipaySigner
+from paypack import AgentPay
+
+# 两行代码接入支付宝
+signer = AlipaySigner(app_id="你的APPID", private_key_path="私钥.pem",
+                       alipay_public_key_path="支付宝公钥.pem", sandbox=True)
+pay = AgentPay(signer=signer, network="alipay")
+
+# AI 直接付人民币
+receipt = pay.send(to="用户支付宝user_id", amount=0.01, currency="CNY",
+                   subject="AI 数据订阅费")
+```
+
+```python
+# 电脑网站支付 — 生成收银台链接，用户扫码即付
+pay_url = signer.page_pay(
+    out_trade_no="ORDER_20260709_001",
+    total_amount=9.90,
+    subject="AI Agent API 调用月费",
+    body="PayPack 自动生成的支付订单"
+)
+# 用户打开 pay_url 即可扫码支付
+```
+
+### LangChain 集成
 
 ```python
 from langchain_paypack import PayPackTool
@@ -112,76 +92,147 @@ tool = PayPackTool(
     wallet_address="0x...",
     network="base-sepolia",
     spend_limit_daily=10.0,
-    broadcast=False
 )
 
-# AI agent calls this directly
+# AI Agent 直接调用
 result = tool._run(to="0x...", amount=0.001, currency="USDC")
-print(result)
 ```
+
+> 💡 对比一下：自己对接支付宝要读几百页文档、写几百行代码、处理沙箱/RSA2签名/验签/回调。PayPack 两行搞定。
 
 ---
 
-## Supported Networks
+## 架构 | Architecture
 
-| Network | Chain ID | Currency |
-|---------|----------|----------|
+```text
+       AI Agent Application
+                │
+                ▼
+         PayPack SDK  ◄── 你在这里
+                │
+        ┌───────┼───────┐
+        │       │       │
+  Protocol   Payment   Security
+   Parser    Router    Fuse
+  (x402/    (USDC/    (Limits/
+   AP2)     CNY)       Audit)
+        │       │       │
+        └───────┼───────┘
+                │
+                ▼
+    Settlement Networks
+  (Base / Alipay / More...)
+```
+
+PayPack 不发明新协议，而是把零散的能力封装成一个 `agent.pay()`。
+
+---
+
+## 功能 | Features
+
+- **多协议**: x402 + AP2 自动检测和路由
+- **双通道**: USDC/ETH 链上支付 + 支付宝人民币支付
+- **签名器抽象**: LocalSigner（开发）/ AWSKMSSigner（生产，私钥不出 HSM）
+- **纳米支付优化**: ERC-4337 批量结算，节省 Gas
+- **安全熔断**: 日消费限额、余额检查、可审计收据
+- **RPC 故障转移**: 多节点自动切换（v0.5）
+- **交易重试**: RBF + 指数退避（v0.5）
+- **限额持久化**: Redis / SQLite / 内存（v0.5）
+- **LangChain 原生**: `PayPackTool` 即插即用
+
+---
+
+## 支持网络 | Supported Networks
+
+| 网络 | Chain ID | 币种 |
+|------|----------|------|
 | Base Sepolia (testnet) | 84532 | ETH, USDC |
 | Base Mainnet | 8453 | ETH, USDC |
 | Ethereum Mainnet | 1 | ETH, USDC |
 | Polygon Mainnet | 137 | POL, USDC |
 | Arbitrum Mainnet | 42161 | ETH, USDC |
+| **支付宝沙箱** | — | **CNY（人民币）** |
+| **支付宝生产**（计划中） | — | **CNY（人民币）** |
 
 ---
 
-## Milestones
+## 安装 | Installation
 
-✅ **v0.1.0 (2026-06-20)** — ETH + USDC offline signing verified on Base Sepolia testnet
+```bash
+pip install langchain-paypack
+```
 
-✅ **v0.2.0** — AP2 protocol parser completed
+或从 Gitee 安装（国内更快）：
 
-✅ **v0.3.0 (2026-06-21)** — LangChain tool plugin tested, multi-chain support, balance checks, environment variable key support
+```bash
+pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypack-0.5.0-py3-none-any.whl
+```
 
-✅ **v0.4.0 (2026-07-08)** — Signer abstraction (LocalSigner + AWSKMSSigner), ERC-4337 batch settlement (Batcher + Bundler)
+---
 
-✅ **v0.5.0 (2026-07-08)** — RPC failover (multi-node auto-switch), transaction retry (RBF + exponential backoff), limit persistence (Redis/SQLite)
+## 已验证交易 | Verified Transactions
 
-| Currency | Amount | Offline-Signed TX Hash |
-|----------|--------|------------------------|
+| 币种 | 金额 | 交易哈希 |
+|------|------|---------|
 | ETH | 0.0001 ETH | `d5f7ec94342c26a132289a9898ffd4885010089d1ddba19951117618a3992127` |
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
-
-> 📌 **Production-ready**: RPC failover, retry, persistent limits, KMS signing — all in place.
-
-## Roadmap
-
-| Phase | Goal | Status |
-|-------|------|--------|
-| v0.1 | Base testnet x402 payment loop (ETH + USDC) | ✅ Done |
-| v0.2 | AP2 protocol support | ✅ Done |
-| v0.3 | LangChain plugin release | ✅ Done |
-| v0.4 | Signer abstraction + ERC-4337 batch settlement | ✅ Done |
-| v0.5 | RPC failover + retry + limit persistence | ✅ Done |
-| v0.6 | Alipay AI Pay integration | 🚧 Planned |
-| v1.0 | PayPack Cloud (hosted service) | 🚧 Planned |
+| CNY (支付宝) | 0.63 元 | 沙箱交易号: `2026070922001406640510096995` |
 
 ---
 
-## Why Now?
+## 里程碑 | Milestones
 
-- Stablecoin annual transaction volume surpassed **$33 trillion** (2025) — 20x PayPal
-- AI agent count projected to reach **22 billion** (McKinsey)
-- x402 protocol already processes tens of millions of transactions on Solana
-- LangChain/LlamaIndex payment plugin market is **completely vacant**
-
-Infrastructure is ready. Demand is exploding. The payment layer lacks a standard answer.
+| 版本 | 目标 | 状态 |
+|------|------|------|
+| v0.1 | Base 测试网 x402 支付闭环 (ETH + USDC) | ✅ |
+| v0.2 | AP2 协议支持 | ✅ |
+| v0.3 | LangChain 插件发布 | ✅ |
+| v0.4 | 签名器抽象 + ERC-4337 批量结算 | ✅ |
+| v0.5 | RPC 故障转移 + 重试 + 限额持久化 | ✅ |
+| v0.6 | 支付宝生产环境上线 | 🚧 |
+| v1.0 | PayPack Cloud 托管服务 | 🚧 |
 
 ---
 
-## Contributing
+## 为什么是现在？| Why Now?
 
-Star this repo, open an issue, or reach out if you're building in the agent economy.
+- 稳定币年交易量突破 **$33 万亿**（2025）— 是 PayPal 的 20 倍
+- AI Agent 数量预计达 **220 亿**（麦肯锡）
+- x402 协议已在 Solana 上处理数千万笔交易
+- LangChain/LlamaIndex 支付插件市场**完全空白**
+- 支付宝"AI 付"计划 2026 年启动 — PayPack 是首个将其桥接到 x402 的项目
 
-## License
+---
+
+## 目标用户：国内 AI 开发者
+
+PayPack 不只是 LangChain 生态的工具。国内数十万开发者在用这些平台——**它们全都没有支付工具**：
+
+| 平台 | 用户量 | 有支付工具吗？ |
+|------|--------|---------------|
+| **Dify** | 数十万 | ❌ 没有 |
+| **Coze（字节）** | 数百万 | ❌ 没有 |
+| **百度千帆** | 数十万 | ❌ 没有 |
+| **通义百炼** | 数十万 | ❌ 没有 |
+
+这些平台的开发者，才是 PayPack 真正的用户。
+
+---
+
+## 链接 | Links
+
+| 渠道 | 地址 |
+|------|------|
+| GitHub | https://github.com/rhcjw/paypack |
+| Gitee（国内镜像） | https://gitee.com/rhcjw_com/paypack |
+| PyPI | https://pypi.org/project/langchain-paypack/ |
+
+---
+
+## 贡献 | Contributing
+
+Star、提 Issue、或者在 Dify/Coze 社区里提到 PayPack，都是贡献。
+
+## 许可证 | License
 
 Apache License 2.0. See [LICENSE](LICENSE).

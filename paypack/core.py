@@ -4,6 +4,7 @@ PayPack Core - AI Agent 通用支付中间件 v0.5.0
 """
 
 import os
+import time
 from datetime import datetime, date, timezone
 from typing import Optional, Dict, Any, Union, List
 
@@ -240,6 +241,8 @@ class AgentPay:
     # ======== 余额检查 ========
 
     def _ensure_sufficient_balance(self, currency: str, amount: float):
+        if currency.upper() == "CNY":
+            return  # 支付宝自身保证余额
         if currency.upper() == "USDC":
             balance_raw = self.usdc_contract.functions.balanceOf(self.address).call()
             balance = balance_raw / (10 ** self.usdc_decimals)
@@ -334,24 +337,93 @@ class AgentPay:
 
     # ======== 单笔支付 ========
 
-    def send(self, to, amount, currency="ETH"):
+    def send(self, to, amount, currency="ETH", **kwargs):
         self._reset_daily_limit_if_new_day()
         spent = self._get_spent_today()
         if spent + amount > self.spend_limit_daily:
             raise DailyLimitExceededError(f"日限额超限: 今日已消费 {spent:.6f}, 本次需 {amount:.6f}")
         self._ensure_sufficient_balance(currency, amount)
 
-        tx = self._execute_usdc_transfer(to, amount) if currency.upper() == "USDC" else self._execute_eth_transfer(to, amount)
+        if currency.upper() == "CNY":
+            # duck typing: detect WechatSigner without importing it
+            if hasattr(self.signer, 'create_jsapi_order'):
+                tx = self._execute_wechat_transfer(to, amount, **kwargs)
+            else:
+                tx = self._execute_alipay_transfer(to, amount, **kwargs)
+        elif currency.upper() == "USDC":
+            tx = self._execute_usdc_transfer(to, amount)
+        else:
+            tx = self._execute_eth_transfer(to, amount)
+
         self._add_spent(amount)
         new_spent = self._get_spent_today()
 
         return {
             "to": to, "amount": amount, "currency": currency,
-            "tx_hash": tx["tx_hash"], "status": tx["status"],
+            "tx_hash": tx.get("tx_hash", tx.get("trade_no")),
+            "status": tx["status"],
             "attempts": tx.get("attempts", 1),
             "explorer_link": tx.get("explorer_link"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "daily_remaining": round(self.spend_limit_daily - new_spent, 6),
+        }
+
+    def _execute_alipay_transfer(self, to, amount, **kwargs):
+        """执行支付宝支付"""
+        import uuid
+        trade_no = kwargs.pop("out_trade_no", f"PAYPACK_{int(time.time())}_{uuid.uuid4().hex[:8]}")
+        subject = kwargs.pop("subject", "AI Agent Payment")
+        buyer_id = kwargs.pop("buyer_id", to)
+
+        result = self.signer.create_payment(
+            out_trade_no=trade_no,
+            total_amount=amount,
+            subject=subject,
+            buyer_id=buyer_id,
+            **kwargs,
+        )
+
+        alipay_resp = result.get("alipay_trade_create_response", result)
+        return {
+            "trade_no": alipay_resp.get("trade_no", trade_no),
+            "status": "pending" if alipay_resp.get("code") == "10000" else "failed",
+            "alipay_response": alipay_resp,
+        }
+
+    def _execute_wechat_transfer(self, to, amount, **kwargs):
+        """
+        执行微信支付（JSAPI）。
+
+        开源的 AgentPay 不包含微信支付实现。此方法通过 duck typing
+        检测 signer 是否实现了 create_jsapi_order，
+        具体实现在闭源的 paypack-wechat 包中。
+
+        Usage (需要安装 paypack-wechat):
+            from paypack_wechat import WechatSigner
+            signer = WechatSigner(mchid="...", private_key="...", ...)
+            pay = AgentPay(signer=signer, network="wechat")
+            pay.send(to="用户openid", amount=9.90, currency="CNY",
+                     subject="AI 服务订阅", app_id="公众号APPID")
+        """
+        trade_no = kwargs.pop("out_trade_no", None)
+        subject = kwargs.pop("subject", "AI Agent Payment")
+        app_id = kwargs.pop("app_id", "")
+
+        # WechatSigner.create_jsapi_order() 返回 prepay 参数
+        # （请求 JSAPI 下单 → 返回前端调起微信支付所需的参数）
+        result = self.signer.create_jsapi_order(
+            openid=to,
+            amount=amount,
+            description=subject,
+            out_trade_no=trade_no,
+            app_id=app_id,
+            **kwargs,
+        )
+
+        return {
+            "trade_no": result.get("out_trade_no", result.get("trade_no")),
+            "status": "pending" if result.get("prepay_id") else "failed",
+            "wechat_response": result,
         }
 
     # ======== ERC-4337 批量支付 ========
