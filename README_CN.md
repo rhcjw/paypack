@@ -30,6 +30,7 @@
 | Nevermined | x402 协议 | ❌ |
 | Privy | 钱包基建 | ❌ |
 | **PayPack** ✅ | x402/AP2 + USDC/ETH + **支付宝** | ✅ **唯一** |
+| **PayPack WeChat** 🔒 | **微信支付 JSAPI** | ✅ 商业版 |
 
 ### 如果你自己对接支付宝
 
@@ -109,7 +110,7 @@ USDC/ETH 链上  →  GOAT、PayPack
 
 | 平台 | 用户量 | 有支付工具吗？ |
 |------|--------|---------------|
-| Dify | 数十万 | ❌ 没有 |
+| Dify | 数十万 | ✅ [PayPack 插件](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) |
 | Coze（字节跳动） | 数百万 | ❌ 没有 |
 | 百度千帆 | 数十万 | ❌ 没有 |
 | 通义百炼 | 数十万 | ❌ 没有 |
@@ -130,8 +131,8 @@ PayPack 就是给这些人用的。
 - ✅ 交易重试 + Replace-by-Fee
 - ✅ 日消费限额 + 持久化
 - ✅ LangChain 插件
-- 🚧 Dify 插件（开发中）
-- 🚧 Coze 插件（计划中）
+- ✅ Dify 插件 — [v0.1.0](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) 支付/查单/退款
+- ✅ **微信支付**（后端已通，商业 License）
 
 ---
 
@@ -150,6 +151,7 @@ PayPack 就是给这些人用的。
 | 版本 | 内容 | 状态 |
 |------|------|------|
 | v0.5 | 链上支付 + LangChain + 生产特性 | ✅ 已发布 |
+| 🔌 Dify 插件 | 支付/查单/退款 | ✅ [v0.1.0](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) |
 | v0.6 | 支付宝生产环境 | 🚧 开发中 |
 | v1.0 | PayPack Cloud（托管服务） | 🚧 计划中 |
 
