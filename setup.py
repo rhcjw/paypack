@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="langchain-paypack",  # 改为 langchain- 前缀，更符合搜索习惯
-    version="0.5.0",           # RPC 故障转移 + 交易重试 + 限额持久化
+    version="0.6.0",           # 支付宝 AI 付 + CNY 支付
     description="LangChain tool for PayPack: AI Agent autonomous payments (HTTP 402, x402, AP2)",
     long_description=long_description,
     long_description_content_type="text/markdown",

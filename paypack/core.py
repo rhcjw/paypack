@@ -187,14 +187,30 @@ class AgentPay:
 
         self._init_network(network, rpc_urls)
 
-        self.usdc_contract = self.w3.eth.contract(
-            address=Web3.to_checksum_address(self.usdc_address),
-            abi=USDC_ABI,
-        )
-        self.usdc_decimals = self.usdc_contract.functions.decimals().call()
+        if not getattr(self, '_offchain_mode', False):
+            self.usdc_contract = self.w3.eth.contract(
+                address=Web3.to_checksum_address(self.usdc_address),
+                abi=USDC_ABI,
+            )
+            self.usdc_decimals = self.usdc_contract.functions.decimals().call()
+        else:
+            self.usdc_contract = None
+            self.usdc_decimals = 6
         self._bundler_url = bundler_rpc_url
 
     def _init_network(self, network, rpc_urls=None):
+        # ---- 支付宝 / 微信支付等非链上网络，跳过 Web3 初始化 ----
+        if isinstance(network, str) and network.lower() in ("alipay", "wechat"):
+            self.network_name = network
+            self.chain_id = 0
+            self.rpc_url = ""
+            self.usdc_address = "0x0000000000000000000000000000000000000000"
+            self.native_currency = "CNY"
+            self.explorer = ""
+            self.w3 = None
+            self._offchain_mode = True
+            return
+
         if isinstance(network, str):
             config = DEFAULT_NETWORKS.get(network)
             if not config:
@@ -218,6 +234,8 @@ class AgentPay:
             fallback_urls = rpc_urls or network.get("rpc_urls", [self.rpc_url])
         else:
             raise NetworkConfigError("network 参数必须是字符串或字典")
+
+        self._offchain_mode = False
 
         if len(fallback_urls) > 1:
             self.w3 = create_failover_w3(fallback_urls, request_kwargs={"timeout": 10})

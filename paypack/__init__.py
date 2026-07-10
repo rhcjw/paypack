@@ -1,5 +1,5 @@
 """
-PayPack - AI Agent 通用支付中间件 v0.5.0
+PayPack - AI Agent 通用支付中间件 v0.6.0
 """
 
 from paypack.core import (
@@ -12,7 +12,7 @@ from paypack.core import (
     DailyLimitExceededError,
     NetworkConfigError,
 )
-from paypack.signer import Signer, LocalSigner, AWSKMSSigner
+from paypack.signer import Signer, LocalSigner, AWSKMSSigner, AlipaySigner
 from paypack.nanopay import ERC4337Batcher, BundlerClient
 from paypack.providers import FailoverProvider, create_failover_w3
 from paypack.retry import RetryConfig, broadcast_with_retry, rbf_resend
@@ -24,6 +24,7 @@ __all__ = [
     "Signer",
     "LocalSigner",
     "AWSKMSSigner",
+    "AlipaySigner",
     "ERC4337Batcher",
     "BundlerClient",
     "FailoverProvider",

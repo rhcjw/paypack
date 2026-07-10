@@ -36,3 +36,6 @@ issue_license.py
 
 # 测试产生的数据库
 *.db
+
+# Dify 插件打包文件
+*.difypkg
