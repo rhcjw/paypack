@@ -100,56 +100,56 @@ result = tool._run(to="0x...", amount=0.001, currency="USDC")
 
 > 💡 对比一下：自己对接支付宝要读几百页文档、写几百行代码、处理沙箱/RSA2签名/验签/回调。PayPack 两行搞定。
 
-### 微信支付（人民币）💚
+### 微信支付（人民币）💚 | WeChat Pay (CNY)
 
 ```python
-# paypack_wechat 为商业模块，需要 License Key
-# 开源代码包里包含示例模板: paypack_wechat_run.example.py
+# paypack_wechat is a commercial module, requires License Key
+# An example template is included: paypack_wechat_run.example.py
 from paypack_wechat import WechatSigner
 from paypack import AgentPay
 
 signer = WechatSigner(
-    mchid="商户号",
-    serial_no="证书序列号",
+    mchid="商户号 / Merchant ID",
+    serial_no="证书序列号 / Certificate S/N",
     private_key_path="apiclient_key.pem",
-    api_v3_key="APIv3密钥",
+    api_v3_key="APIv3密钥 / APIv3 Key",
     license_key="PAYPACK-WECHAT-v1-...",
-    app_id="小程序AppID",
-    notify_url="https://你的域名/wechat/notify",
+    app_id="小程序AppID / Mini Program AppID",
+    notify_url="https://your-domain.com/wechat/notify",
 )
 pay = AgentPay(signer=signer, network="wechat")
 
-# AI 发起微信支付 → 前端调起 wx.requestPayment()
+# AI initiates WeChat Pay → frontend calls wx.requestPayment()
 result = pay.send(
-    to="用户openid",
+    to="用户openid / User OpenID",
     amount=9.90,
     currency="CNY",
-    subject="AI 服务月费",
+    subject="AI 服务月费 / AI Monthly Subscription",
     app_id="小程序AppID",
 )
-# result["prepay_params"] 直接传给前端调起支付
+# result["prepay_params"] can be passed directly to the frontend
 ```
 
-### Dify 插件
+### Dify 插件 | Dify Plugin
 
 ```bash
-# 在 Dify 中：插件 → 从 GitHub 安装
-# 输入：https://github.com/rhcjw/paypack
+# In Dify: Plugins → Install from GitHub
+# Enter: https://github.com/rhcjw/paypack
 ```
 
-或直接下载 [paypack-0.1.0.difypkg](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) 上传。
+Or download [paypack-0.1.0.difypkg](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) and upload locally.
 
-> 详见 [QUICKSTART.md](./QUICKSTART.md) — 5 分钟链上/支付宝/Dify 三路教程。
+> See [QUICKSTART.md](./QUICKSTART.md) — 5-minute tutorial covering all three channels.
 
 ---
 
-## 当前状态 | Status
+## 当前状态 | Current Status
 
-| 通道 | 沙箱/测试 | 生产 | 全自动？ |
-|------|----------|------|----------|
-| **ETH / USDC** (Base/Ethereum/Polygon/Arbitrum) | ✅ 已验证 | ✅ 可用 | ✅ 是 |
-| **支付宝 CNY** | ✅ 沙箱已通 | 🚧 开发中 | ⚠️ 需用户扫码 |
-| **微信支付 CNY** | ✅ 后端已通 | ✅ 商业版 | ⚠️ 需用户确认 |
+| Channel | Sandbox/Test | Production | Fully Auto? |
+|---------|-------------|------------|-------------|
+| **ETH / USDC** (Base/Ethereum/Polygon/Arbitrum) | ✅ Verified | ✅ Live | ✅ Yes |
+| **Alipay CNY** | ✅ Sandbox OK | 🚧 In Progress | ⚠️ User scans QR |
+| **WeChat Pay CNY** | ✅ Backend OK | ✅ Commercial | ⚠️ User confirms |
 
 ---
 
