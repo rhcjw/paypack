@@ -1,207 +1,131 @@
-# 掘金/知乎技术文章草稿
+# 知乎文章
 
 ---
 
-**标题：如何让 AI Agent 拥有支付能力——PayPack 的设计与实践**
-
-**副标题：从 HTTP 402 到支付宝，AI 自主支付的工程实现**
+**标题：我写了个开源项目，让 AI Agent 能付支付宝和微信——已提交 Dify 官方插件市场**
 
 ---
 
 ## 一、一个躺了 34 年的 HTTP 状态码
 
-HTTP/1.0 规范（RFC 1945，1991 年）定义了一个叫做 `402 Payment Required` 的状态码。它的语义很直白：这个资源需要付费才能访问。
+HTTP/1.0 规范（1991 年）定义了一个叫 `402 Payment Required` 的状态码。语义很直白：这个资源需要付费。
 
-但 34 年来，几乎没有人用过它。
+但 34 年来没人用过它。原因：服务器返回 402 的时候，需要一个人坐在屏幕前掏信用卡。自动化场景走不通。
 
-原因很朴素：服务器返回 402 的时候，需要一个人类坐在屏幕前，掏出信用卡，输入卡号，点"确认支付"。这个路径在自动化场景里完全走不通。
+**AI Agent 出现后变了。** 一个自主 AI 每小时可能调用上百次 API、买数据、订阅服务——单笔 $0.001。信用卡手续费吞掉交易，每笔要人工审批，结算周期以天计。
 
-**直到 AI Agent 出现。**
-
-一个自主运行的 AI Agent，每小时可能调用上百次 API、购买数据、订阅服务——单笔金额可能低至 $0.001。传统支付体系在这种场景下直接崩溃：
-- 信用卡手续费吃掉交易
-- 每笔都要人类审批
-- 结算周期以天为单位
+---
 
 ## 二、x402 和 AP2：机器支付的协议层
 
-两个协议正在解决这个问题：
+Coinbase 提了 **x402**，Google 提了 **AP2**。核心思路：服务器返回 402 时附带支付地址和金额，AI 自动完成链上转账——全程无人。
 
-**x402**（Coinbase 提出）：当服务器返回 402 时，同时在响应头里附带支付方信息：
 ```
 HTTP/1.1 402 Payment Required
 X-402-Payee: 0xPayeeAddress
 X-402-Amount: 0.001
 X-402-Currency: USDC
-X-402-Network: base
 ```
 
-客户端解析这些头，完成链上转账，就能获取数据——全程不需要人类介入。
+但翻遍开源项目，全都不支持支付宝和微信：
 
-**AP2**（Google 提出）：理念类似，在协议层面定义了 AI Agent 之间的支付握手流程。
-
-但问题来了：**协议有了，谁来实现？**
-
-## 三、"别人都在搞"——但没人管中国用户
-
-我翻遍了 AI 支付相关的开源项目：
-
-| 工具 | 支付方式 | 中国用户？ | 定位 |
-|------|---------|-----------|------|
-| Ampersend | x402 + USDC | ❌ | x402 协议实现 |
-| GOAT | 加密货币 | ❌ | AI Agent 框架 |
-| Stripe Agent Toolkit | Stripe 信用卡 | ❌ 有限 | LangChain 插件 |
-| Nevermined | x402 协议 | ❌ | 协议层 |
-| Privy | 钱包基建 | ❌ | 嵌入式钱包 |
-| **PayPack** | x402/AP2 + USDC/ETH + **支付宝** | ✅ **唯一** | **统一支付中间件** |
-
-结论非常清楚：**所有人的注意力都在加密货币上，没人做支付宝/微信支付。**
-
-这其实是巨大的市场空白。国内 13 亿人的支付习惯是支付宝和微信，不是 USDC。Dify 上有几十万开发者，Coze 上有几百万——这些平台全都没有支付工具。
-
-## 四、PayPack 的设计思路
-
-PayPack 的架构很简单：不发明新协议，而是把所有已有协议封装进一个统一接口。
-
-```
-       AI Agent Application
-                │
-                ▼
-         PayPack SDK
-                │
-        ┌───────┼───────┐
-        │       │       │
-  Protocol   Payment   Security
-   Parser    Router    Fuse
-  (x402/    (USDC/    (Limits/
-   AP2)     CNY)       Audit)
-        │       │       │
-        └───────┼───────┘
-                │
-                ▼
-    Settlement Networks
-  (Base / Alipay / ...)
-```
-
-核心设计决策：
-
-### 1. Signer 抽象
-
-不同支付通道有不同的签名方式。EVM 链用 ECDSA，支付宝用 RSA2，AWS 生产环境用 KMS。PayPack 把签名抽象成接口：
-
-```python
-# 开发环境：本地签名
-signer = LocalSigner(private_key="0x...")
-
-# 生产环境：KMS 签名（私钥不出 HSM）
-signer = AWSKMSSigner(key_id="alias/paypack-eth-key")
-
-# 支付宝：RSA2 签名
-signer = AlipaySigner(app_id="xxx", private_key_path="key.pem",
-                       alipay_public_key_path="alipay_pub.pem")
-```
-
-上层 `AgentPay` 不关心签名怎么做的，它只调 `signer.sign_transaction()`。
-
-### 2. 协议自动路由
-
-```python
-response = requests.get("https://api.data-provider.com/premium")
-if response.status_code == 402:
-    content = pay.auto_handle_402(response)  # 自动检测 x402/AP2
-```
-
-`auto_handle_402` 解析响应头，自动识别 x402 还是 AP2，然后走对应的支付通道。
-
-### 3. 双通道支付
-
-```python
-# 链上 USDC
-pay.send(to="0x...", amount=0.001, currency="USDC")
-
-# 支付宝人民币
-pay.send(to="支付宝user_id", amount=9.90, currency="CNY",
-         subject="AI API 月度订阅")
-```
-
-同一个 `pay.send()` 接口，后端根据 `currency` 走不同的结算网络。
-
-## 五、工程实现细节
-
-### 链上支付栈（v0.1-v0.5）
-
-- **EVM 兼容**：Base / Ethereum / Polygon / Arbitrum
-- **ERC-4337 批量结算**：多笔支付打包成单笔链上交易，节省 60-80% Gas
-- **RPC 故障转移**：3 节点自动切换，避免单点故障
-- **交易重试**：Replace-by-Fee + 指数退避
-- **限额持久化**：Redis / SQLite / 内存，日限额可配置
-- **AWS KMS 签名**：生产环境私钥永不出 HSM
-
-### 支付宝集成（v0.6 开发中，沙箱已验证）
-
-```python
-class AlipaySigner(Signer):
-    """
-    支持:
-    - alipay.trade.create（JSAPI/APP 支付）
-    - alipay.trade.page.pay（电脑网站支付）
-    - alipay.trade.query（交易查询）
-    - alipay.trade.refund（退款）
-    """
-```
-
-沙箱验证结果：
-- RSA2 签名 ✅
-- 支付订单创建 ✅
-- 交易查询 ✅
-- 沙箱交易号：`2026070922001406640510096995`
-
-### 自己对接支付宝 vs 用 PayPack
-
-| 步骤 | 自己对接 | PayPack |
-|------|---------|------|
-| 阅读支付宝开放平台文档 | 几百页 | 不需要 |
-| 生成 RSA 密钥对 | 自己写脚本 | `generate_alipay_keys.py` |
-| RSA2 签名实现 | ~50 行代码 | 内置 |
-| 请求参数组装 | ~30 行代码 | 内置 |
-| 验签回调处理 | ~80 行代码 | 内置 |
-| API 调用封装 | ~100 行代码 | 内置 |
-| **总计** | **几百行 + 几天调试** | **两行代码** |
-
-## 六、PayPack 的定位
-
-三个圈的交集：
-
-```
-  x402/AP2 协议支持  →  Ampersend、Nevermined、PayPack
-  USDC/ETH 链上支付  →  GOAT、PayPack
-  支付宝/微信法币支付 →  PayPack（唯一）
-```
-
-**PayPack 是唯一一个同时支持协议层、链上、法币三个维度的项目。**
-
-这不是"意义很小"，这是"国内 AI 开发者目前唯一的选择"。
-
-## 七、谁在用？
-
-- **Dify 用户**（数十万）：想在 Dify 工作流里加上支付节点？目前只能自己写代码。PayPack 可以成为 Dify 插件。
-- **Coze 用户**（数百万）：Coze Bot 想卖服务收钱？没这个能力。PayPack 可以填补。
-- **百度千帆 / 通义百炼**：同理。
-
-这些平台的开发者不看 LangChain 官方文档，他们看的是中文教程、B 站视频、掘金文章。
-
-## 八、开源和路线图
-
-- GitHub: https://github.com/rhcjw/paypack
-- Gitee: https://gitee.com/rhcjw_com/paypack
-- PyPI: `pip install langchain-paypack`
-
-| 版本 | 内容 | 状态 |
-|------|------|------|
-| v0.5 | 链上支付 + LangChain + 故障转移 + 重试 | ✅ |
-| v0.6 | 支付宝生产环境 | 🚧 |
-| v1.0 | PayPack Cloud 托管服务 | 🚧 |
+| 工具 | 支付方式 | 中国用户？ |
+|------|---------|-----------|
+| Ampersend | x402 + USDC | ❌ |
+| GOAT | 加密货币 | ❌ |
+| Stripe Agent Toolkit | 信用卡 | ❌ |
+| Nevermined | x402 | ❌ |
+| **PayPack** | x402 + USDC/ETH + **支付宝 + 微信** | ✅ |
 
 ---
 
-**如果你也希望 AI Agent 能付人民币，欢迎 star、试用、一起建设。**
+## 三、PayPack 是什么
+
+**两行代码，让 AI Agent 付人民币。**
+
+```python
+from paypack.signer.alipay import AlipaySigner
+from paypack import AgentPay
+
+signer = AlipaySigner(app_id="你的APPID", private_key_path="私钥.pem",
+                       alipay_public_key_path="支付宝公钥.pem", sandbox=True)
+pay = AgentPay(signer=signer, network="alipay")
+
+# AI 付人民币
+pay.send(to="用户支付宝ID", amount=0.01, currency="CNY", subject="AI 订阅费")
+```
+
+链上支付同样简单——AI 自动处理 HTTP 402：
+
+```python
+response = requests.get("https://api.premium-weather.com/v2/tokyo")
+if response.status_code == 402:
+    pay.auto_handle_402(response)  # 自动付 0.001 USDC，继续干活
+```
+
+微信支付也跑通了：
+
+```python
+from paypack_wechat import WechatSigner
+
+signer = WechatSigner(mchid="商户号", serial_no="证书序列号",
+                       private_key_path="apiclient_key.pem",
+                       api_v3_key="APIv3密钥", license_key="...",
+                       app_id="小程序AppID")
+pay = AgentPay(signer=signer, network="wechat")
+# 后端下单 → 前端 wx.requestPayment() → 用户确认
+```
+
+---
+
+## 四、Dify 插件 — 已提交官方市场
+
+如果你用 Dify 搭 AI 应用，现在可以直接装支付插件了：
+
+> Dify → 插件 → 从 GitHub 安装 → `https://github.com/rhcjw/paypack`
+
+已提交 Dify 官方插件市场 PR [#3420](https://github.com/langgenius/dify-official-plugins/pull/3420)，审核通过后全 Dify 用户搜"支付"就能看到。
+
+三个工具：**支付**（USDC/ETH/CNY 三币种）+ **查单** + **退款**。
+
+---
+
+## 五、项目状态（截至 2026.7.10）
+
+| 通道 | 状态 |
+|------|------|
+| ETH/USDC 链上（Base/Ethereum/Polygon/Arbitrum） | ✅ 已跑通 |
+| x402/AP2 协议解析 | ✅ 已实现 |
+| 支付宝 CNY 沙箱 | ✅ 已通 |
+| 微信支付 CNY | ✅ 后端已通（商业 License） |
+| LangChain 插件 | ✅ PyPI 已发布 |
+| Dify 插件 | ✅ PR #3420 审核中 |
+| ERC-4337 批量结算 / RPC 故障转移 / 交易重试 | ✅ 已内置 |
+
+安全机制：日消费限额、余额检查、AWS KMS 签名（生产环境私钥不出 HSM）——全部内置。
+
+---
+
+## 六、坐标图
+
+```
+x402/AP2 协议  →  Ampersend、Nevermined、PayPack
+USDC/ETH 链上  →  GOAT、PayPack
+支付宝/微信法币 →  PayPack（唯一）
+```
+
+**PayPack 是目前唯一同时覆盖三个圈的项目。** 国内 13 亿人用支付宝微信，不用 USDC——这个市场只有 PayPack 在做。
+
+---
+
+## 链接
+
+- GitHub（中英双语）：https://github.com/rhcjw/paypack
+- Gitee（国内更快）：https://gitee.com/rhcjw_com/paypack
+- PyPI：`pip install langchain-paypack`
+- 快速入门教程：https://github.com/rhcjw/paypack/blob/master/QUICKSTART.md
+- Dify 插件 PR：https://github.com/langgenius/dify-official-plugins/pull/3420
+
+---
+
+**欢迎 star、试用、一起建设。如果你也希望 AI Agent 能付人民币的话。**

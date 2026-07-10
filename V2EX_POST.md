@@ -1,8 +1,8 @@
-# V2EX 帖子草稿 — 创造者/分享创造 节点
+# V2EX 帖子 — 分享创造节点
 
 ---
 
-**标题：我做了个开源项目，让 AI Agent 两行代码就能用支付宝付钱**
+**标题：我做了个开源项目，让 AI Agent 两行代码就能付人民币——已提交 Dify 官方插件市场**
 
 ---
 
@@ -45,13 +45,31 @@ pay.send(to="用户支付宝user_id", amount=0.01, currency="CNY",
          subject="AI 数据订阅费")
 ```
 
-同时也支持链上 USDC/ETH 支付（x402/AP2 协议），ERC-4337 批量结算，AWS KMS 签名这些生产特性都已经做完了。
+同时也支持链上 USDC/ETH 支付（x402/AP2 协议），自动处理 HTTP 402：
+
+```python
+response = requests.get("https://api.premium-data.com/weather")
+if response.status_code == 402:
+    pay.auto_handle_402(response)  # AI 自己付钱，继续干活
+```
+
+微信支付 JSAPI 也已跑通（商业 License）。
+
+---
+
+## Dify 插件
+
+已经打包发到 Dify 官方插件市场（PR [#3420](https://github.com/langgenius/dify-official-plugins/pull/3420) 审核中）：
+
+> Dify → 插件 → 从 GitHub 安装 → 输入 `https://github.com/rhcjw/paypack`
+
+三个工具：支付（USDC/ETH/CNY）+ 查单 + 退款。
 
 ---
 
 ## 坐标图
 
-如果你把现在的 AI 支付工具画成三个圈：
+如果把 AI 支付工具画成三个圈：
 
 ```
 x402/AP2 协议  →  Ampersend、Nevermined、PayPack
@@ -59,21 +77,35 @@ USDC/ETH 链上  →  GOAT、PayPack
 支付宝/微信法币 →  PayPack（唯一）
 ```
 
-**PayPack 是唯一一个同时出现在三个圈里的项目。**
+**PayPack 是目前唯一同时覆盖三个圈的项目。**
 
 ---
 
 ## 为什么做这个？
 
-国内 AI 开发者想让 Agent 自动付人民币，现在有什么选择？
+国内 AI 开发者想让 Agent 付人民币，现在有什么选择？
 
-- ❌ 自己对接支付宝：几百页文档，RSA2 签名，沙箱调试，验签回调...
+- ❌ 自己对接支付宝：几百页文档，RSA2 签名，沙箱调试...
 - ❌ 用 Ampersend：只支持 USDC
 - ❌ 用 Stripe：国内用户没信用卡
 
-✅ **PayPack：两行代码，开源，免费。**
+✅ **PayPack：开源免费，两行代码。**
 
 Dify、Coze、百度千帆、通义百炼——这些平台加起来几百万开发者，没有一个有支付工具。PayPack 是给这些人用的。
+
+---
+
+## 项目状态
+
+| 通道 | 状态 |
+|------|------|
+| ETH/USDC 链上支付 | ✅ 已跑通（Base/Ethereum/Polygon/Arbitrum） |
+| 支付宝 CNY | ✅ 沙箱已通 |
+| 微信支付 CNY | ✅ 后端已通（商业版） |
+| LangChain 插件 | ✅ 已发布 PyPI |
+| Dify 插件 | ✅ [PR #3420](https://github.com/langgenius/dify-official-plugins/pull/3420) 审核中 |
+
+安全性：日消费限额、余额检查、RPC 故障转移、交易重试、AWS KMS 签名（私钥不出 HSM）——都已内置。
 
 ---
 
@@ -82,6 +114,7 @@ Dify、Coze、百度千帆、通义百炼——这些平台加起来几百万开
 - GitHub: https://github.com/rhcjw/paypack
 - Gitee（国内更快）: https://gitee.com/rhcjw_com/paypack
 - PyPI: `pip install langchain-paypack`
+- 快速入门: https://github.com/rhcjw/paypack/blob/master/QUICKSTART.md
 
 ---
 
