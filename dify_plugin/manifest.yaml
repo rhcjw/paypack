@@ -1,0 +1,31 @@
+# PayPack Dify 插件 — manifest.yaml
+# 插件唯一标识符，Dify 通过此文件识别和加载插件
+version: 0.0.1
+type: plugin
+author: rhcjw
+name: paypack
+label:
+  en_US: PayPack
+  zh_Hans: PayPack — AI 支付
+description:
+  en_US: Universal payment tool for AI agents. Supports USDC/ETH on-chain payments AND Alipay CNY payments. The only payment tool that supports Chinese users.
+  zh_Hans: AI Agent 通用支付工具。支持 USDC/ETH 链上支付和支付宝人民币支付。目前唯一支持中国用户的 AI 支付工具。
+icon: icon.svg
+tags:
+  - payment
+  - finance
+  - crypto
+  - alipay
+created_at: 2026-07-09
+resource:
+  memory: 268435456
+  permission:
+    - tool:
+        enabled: true
+    - app:
+        enabled: true
+    - endpoint:
+        enabled: true
+plugins:
+  tools:
+    - provider/paypack

@@ -1,0 +1,140 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PayPack Payment API",
+    "description": "AI Agent universal payment API. Supports USDC/ETH on-chain AND Alipay CNY payments. The only payment tool for Chinese AI developers.",
+    "version": "0.5.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8899",
+      "description": "PayPack local server"
+    }
+  ],
+  "paths": {
+    "/api/v1/pay": {
+      "post": {
+        "operationId": "pay",
+        "summary": "Make a payment",
+        "description": "Send a payment via USDC/ETH on-chain or CNY via Alipay. For Alipay, set currency=CNY and provide the buyer's Alipay user ID as recipient.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["recipient", "amount"],
+                "properties": {
+                  "recipient": {
+                    "type": "string",
+                    "description": "Wallet address (crypto) or Alipay user ID (CNY)"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Payment amount"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": ["USDC", "ETH", "CNY"],
+                    "default": "USDC",
+                    "description": "Payment currency. Use CNY for Alipay."
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Description for Alipay orders"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "tx_hash": { "type": "string" },
+                    "trade_no": { "type": "string" },
+                    "amount": { "type": "number" },
+                    "currency": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/query": {
+      "post": {
+        "operationId": "query",
+        "summary": "Query payment status",
+        "description": "Query the status of a payment by trade number (Alipay) or transaction hash (crypto).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["trade_no"],
+                "properties": {
+                  "trade_no": {
+                    "type": "string",
+                    "description": "Trade number or transaction hash"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": ["USDC", "ETH", "CNY"],
+                    "default": "CNY"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment status"
+          }
+        }
+      }
+    },
+    "/api/v1/refund": {
+      "post": {
+        "operationId": "refund",
+        "summary": "Refund a payment",
+        "description": "Refund a payment by trade number (currently Alipay only).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["trade_no"],
+                "properties": {
+                  "trade_no": {
+                    "type": "string",
+                    "description": "Trade number to refund"
+                  },
+                  "refund_amount": {
+                    "type": "number",
+                    "description": "Amount to refund (optional, full refund if empty)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund result"
+          }
+        }
+      }
+    }
+  }
+}
