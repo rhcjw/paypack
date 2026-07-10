@@ -2,3 +2,37 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# ============================================
+# 密钥 & 证书 — 绝对不能提交到 Git
+# ============================================
+*.pem
+*.p12
+*.key
+*.crt
+*.csr
+*.der
+.env
+
+# 微信支付私钥目录
+wechat_keys/
+
+# 支付宝私钥目录
+paypack/signer/keys/
+
+# 微信支付配置（含商户号/APIv3密钥/License）
+paypack_wechat_run.py
+
+# 微信支付商业模块
+paypack_wechat/
+
+# 沙箱支付URL（含APPID和签名）
+sandbox_pay_url.txt
+
+# License 相关
+paypack_wechat/license_private.pem
+generate_license_keys.py
+issue_license.py
+
+# 测试产生的数据库
+*.db
