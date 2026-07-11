@@ -1,5 +1,5 @@
 """
-PayPack - AI Agent 通用支付中间件 v0.6.0
+PayPack - AI Agent 通用支付中间件 v0.7.0
 """
 
 from paypack.core import (

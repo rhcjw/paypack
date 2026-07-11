@@ -158,7 +158,7 @@ Or download [paypack-0.1.0.difypkg](https://github.com/rhcjw/paypack/releases/ta
 | 通道 | 沙箱/测试 | 生产 | 全自动？ |
 |---------|-------------|------------|-------------|
 | **ETH / USDC** (Base/Ethereum/Polygon/Arbitrum) | ✅ Verified | ✅ Live | ✅ Yes |
-| **Alipay CNY** | ✅ Sandbox OK | 🚧 In Progress | ⚠️ User scans QR |
+| **Alipay CNY** | ✅ Sandbox OK | ✅ **Production Verified** (¥0.10 paid + refunded) | ⚠️ User scans QR |
 | **WeChat Pay CNY** | ✅ Backend OK | ✅ Commercial | ⚠️ User confirms |
 
 ---
@@ -215,7 +215,7 @@ PayPack 不发明新协议，而是把零散的能力封装成一个 `agent.pay(
 | Polygon Mainnet | 137 | POL, USDC |
 | Arbitrum Mainnet | 42161 | ETH, USDC |
 | **Alipay Sandbox | 支付宝沙箱** | — | **CNY** |
-| **Alipay Production (planned) | 支付宝生产** | — | **CNY** |
+| **Alipay Production ✅ | 支付宝生产** | — | **CNY** (¥0.10 verified) |
 | **WeChat Pay | 微信支付** | — | **CNY** 🔒 Commercial |
 
 ---
@@ -241,6 +241,7 @@ pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypac
 | ETH | 0.0001 ETH | `d5f7ec94342c26a132289a9898ffd4885010089d1ddba19951117618a3992127` |
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
 | CNY (Alipay) | 0.63 yuan | Sandbox TX: `2026070922001406640510096995` |
+| CNY (Alipay) | **¥0.10** | **Production** ✅ `2026071122001479581453918172` (paid + refunded) |
 
 ---
 
@@ -254,7 +255,7 @@ pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypac
 | v0.4 | Signer abstraction + ERC-4337 batch settlement | ✅ |
 | v0.5 | RPC failover + retry + limit persistence | ✅ |
 | 🔌 Dify Plugin | Pay/Query/Refund tools | ✅ [v0.1.0](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) |
-| v0.6 | Alipay production launch | 🚧 |
+| v0.6 | Alipay production launch | ✅ (¥0.10 paid + refunded on 2026-07-11) |
 | v1.0 | PayPack Cloud managed service | 🚧 |
 
 ---
