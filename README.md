@@ -26,8 +26,8 @@
 | **Stripe Agent Toolkit** | Stripe (credit card) | ❌ Foreign cards only |
 | **Nevermined** | x402 protocol | ❌ No Alipay/WeChat |
 | **Privy** | Wallet infra | ❌ No Alipay/WeChat |
-| **PayPack** ✅ | x402/AP2 + USDC/ETH + **Alipay** | ✅ Open-source & free |
-| **PayPack WeChat** 🔒 | **WeChat Pay JSAPI** | ✅ Commercial |
+| **PayPack** ✅ | x402/AP2 + USDC/ETH + **Alipay** + **WeChat Pay** | ✅ Open-source & free |
+| **PayPack Cloud** ☁️ | **Managed payment API — Alipay + WeChat Pay** | ✅ Live at [rhcjw.com/pay](https://rhcjw.com/pay) |
 
 While everyone asks "how does AI pay with USDC?", PayPack asks "how does AI pay with Alipay and WeChat?".
 当所有人在琢磨"怎么让 AI 用 USDC 付钱"时，PayPack 在想"怎么让 AI 用支付宝和微信付钱"。
@@ -120,6 +120,27 @@ result = pay.send(
 # result["prepay_params"] passes directly to frontend | 直接传给前端调起支付
 ```
 
+### PayPack Cloud | 云托管服务 ☁️
+
+不想自己管理密钥和商户号？直接用 PayPack Cloud API：
+
+```bash
+# 注册获取 API Key
+curl -X POST https://rhcjw.com/pay/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "myapp", "email": "user@example.com"}'
+
+# 创建支付宝支付
+curl -X POST https://rhcjw.com/pay/v1/pay \
+  -H "Authorization: Bearer ppk_xxx" \
+  -d '{"amount": 0.01, "subject": "AI 服务", "channel": "alipay"}'
+
+# 创建微信支付
+curl -X POST https://rhcjw.com/pay/v1/pay \
+  -H "Authorization: Bearer ppk_xxx" \
+  -d '{"amount": 0.01, "subject": "AI 服务", "channel": "wechat"}'
+```
+
 ### LangChain Integration | LangChain 集成
 
 ```python
@@ -159,7 +180,8 @@ Or download [paypack-0.1.0.difypkg](https://github.com/rhcjw/paypack/releases/ta
 |---------|-------------|------------|-------------|
 | **ETH / USDC** (Base/Ethereum/Polygon/Arbitrum) | ✅ Verified | ✅ Live | ✅ Yes |
 | **Alipay CNY** | ✅ Sandbox OK | ✅ **Production Verified** (¥0.10 paid + refunded) | ⚠️ User scans QR |
-| **WeChat Pay CNY** | ✅ Backend OK | ✅ Commercial | ⚠️ User confirms |
+| **WeChat Pay CNY** | ✅ Backend OK | ✅ **Production Verified** (¥0.05 paid) | ⚠️ User scans QR |
+| **PayPack Cloud** ☁️ | — | ✅ **Live** at [rhcjw.com/pay](https://rhcjw.com/pay) | ✅ API Key auth |
 
 ---
 
@@ -194,6 +216,7 @@ PayPack 不发明新协议，而是把零散的能力封装成一个 `agent.pay(
 
 - **Multi-Protocol | 多协议**: x402 + AP2 auto-detect and route | 自动检测和路由
 - **3-Channel | 三通道**: USDC/ETH on-chain + Alipay CNY + WeChat Pay CNY
+- **Cloud API | 云托管**: No key management needed, pay-as-you-go | 无需管理密钥，按次计费
 - **Signer Abstraction | 签名器抽象**: LocalSigner (dev) / AWSKMSSigner (prod, key never leaves HSM)
 - **Nano-Payment | 纳米支付**: ERC-4337 batch settlement, saves gas | 批量结算省 Gas
 - **Safety Fuse | 安全熔断**: Daily spend limit, balance check, auditable receipts | 日限额、余额检查、可审计收据
@@ -216,7 +239,8 @@ PayPack 不发明新协议，而是把零散的能力封装成一个 `agent.pay(
 | Arbitrum Mainnet | 42161 | ETH, USDC |
 | **Alipay Sandbox | 支付宝沙箱** | — | **CNY** |
 | **Alipay Production ✅ | 支付宝生产** | — | **CNY** (¥0.10 verified) |
-| **WeChat Pay | 微信支付** | — | **CNY** 🔒 Commercial |
+| **WeChat Pay ✅ | 微信支付** | — | **CNY** (¥0.05 verified) |
+| **PayPack Cloud ☁️** | — | **CNY** | Live |
 
 ---
 
@@ -242,6 +266,7 @@ pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypac
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
 | CNY (Alipay) | 0.63 yuan | Sandbox TX: `2026070922001406640510096995` |
 | CNY (Alipay) | **¥0.10** | **Production** ✅ `2026071122001479581453918172` (paid + refunded) |
+| CNY (WeChat) | **¥0.05** | **Production** ✅ Native QR scan & pay |
 
 ---
 
@@ -256,7 +281,8 @@ pip install https://gitee.com/rhcjw_com/paypack/raw/master/dist/langchain_paypac
 | v0.5 | RPC failover + retry + limit persistence | ✅ |
 | 🔌 Dify Plugin | Pay/Query/Refund tools | ✅ [v0.1.0](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) |
 | v0.6 | Alipay production launch | ✅ (¥0.10 paid + refunded on 2026-07-11) |
-| v1.0 | PayPack Cloud managed service | 🚧 |
+| v0.7 | WeChat Pay production launch | ✅ (¥0.05 paid on 2026-07-12) |
+| v1.0 | PayPack Cloud managed service | ✅ **Live** at [rhcjw.com/pay](https://rhcjw.com/pay) |
 
 ---
 
@@ -293,6 +319,7 @@ These developers are PayPack's real users. | 这些平台的开发者，才是 P
 | GitHub | https://github.com/rhcjw/paypack |
 | Gitee (China Mirror) | https://gitee.com/rhcjw_com/paypack | Gitee（国内镜像） |
 | PyPI | https://pypi.org/project/langchain-paypack/ |
+| PayPack Cloud | https://rhcjw.com/pay | 云服务 |
 | Dify Plugin | [paypack-0.1.0.difypkg](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) | Dify 插件 |
 | Quick Start | [QUICKSTART.md](./QUICKSTART.md) | 快速入门 |
 
