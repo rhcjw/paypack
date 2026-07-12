@@ -3,10 +3,8 @@ identity:
   name: paypack
   label:
     en_US: PayPack
-    zh_Hans: PayPack
   description:
-    en_US: AI Agent universal payment middleware. Pay with USDC, ETH, or CNY (Alipay).
-    zh_Hans: AI Agent 通用支付中间件。支持 USDC/ETH 链上支付和支付宝人民币支付。
+    en_US: AI Agent universal payment middleware. Pay with USDC, ETH, or CNY (Alipay/WeChat Pay).
   icon: _assets/icon.svg
   tags:
     - finance
@@ -20,55 +18,42 @@ credentials_for_provider:
       - value: crypto
         label:
           en_US: Crypto (USDC/ETH on-chain)
-          zh_Hans: 链上支付（USDC/ETH）
       - value: alipay
         label:
           en_US: Alipay (CNY fiat)
-          zh_Hans: 支付宝（人民币）
     label:
       en_US: Payment Mode
-      zh_Hans: 支付模式
     placeholder:
       en_US: Select payment mode
-      zh_Hans: 选择支付模式
   private_key:
     type: secret-input
     required: true
     label:
       en_US: Private Key
-      zh_Hans: 私钥
     placeholder:
       en_US: ETH private key or Alipay merchant private key (PEM)
-      zh_Hans: ETH 私钥 或 支付宝商户私钥（PEM）
     help:
       en_US: "For crypto: ETH private key. For Alipay: merchant RSA private key."
-      zh_Hans: "链上支付：ETH 私钥。支付宝：商户 RSA 私钥。"
   network:
     type: text-input
     required: false
     default: base-sepolia
     label:
       en_US: Network
-      zh_Hans: 网络
     placeholder:
       en_US: base-sepolia
-      zh_Hans: base-sepolia
     help:
       en_US: Blockchain network (base-sepolia, ethereum, polygon, arbitrum)
-      zh_Hans: 区块链网络（base-sepolia, ethereum, polygon, arbitrum）
   spend_limit_daily:
     type: text-input
     required: false
     default: "10.0"
     label:
       en_US: Daily Spend Limit
-      zh_Hans: 每日消费上限
     placeholder:
       en_US: "10.0"
-      zh_Hans: "10.0"
     help:
       en_US: Maximum daily spend for AI agent (in the chosen currency)
-      zh_Hans: AI Agent 每日最大消费金额
   broadcast:
     type: select
     required: false
@@ -77,41 +62,31 @@ credentials_for_provider:
       - value: "true"
         label:
           en_US: Yes (broadcast to chain)
-          zh_Hans: 是（广播上链）
       - value: "false"
         label:
           en_US: No (dry run only)
-          zh_Hans: 否（仅模拟）
     label:
       en_US: Broadcast Transaction
-      zh_Hans: 广播交易
     placeholder:
       en_US: Select
-      zh_Hans: 选择
   app_id:
     type: text-input
     required: false
     label:
       en_US: Alipay App ID
-      zh_Hans: 支付宝 APPID
     placeholder:
       en_US: 2021...
-      zh_Hans: 2021...
     help:
       en_US: Required for Alipay mode. Get this from Alipay Open Platform.
-      zh_Hans: 支付宝模式必填。从支付宝开放平台获取。
   alipay_public_key:
     type: secret-input
     required: false
     label:
       en_US: Alipay Public Key
-      zh_Hans: 支付宝公钥
     placeholder:
-      en_US: -----BEGIN PUBLIC KEY-----
-      zh_Hans: -----BEGIN PUBLIC KEY-----
+      en_US: "-----BEGIN PUBLIC KEY-----"
     help:
       en_US: Alipay production public key (PEM). Required for Alipay mode.
-      zh_Hans: 支付宝生产环境公钥（PEM）。支付宝模式必填。
   sandbox:
     type: select
     required: false
@@ -120,17 +95,13 @@ credentials_for_provider:
       - value: "true"
         label:
           en_US: Sandbox (test mode)
-          zh_Hans: 沙箱（测试模式）
       - value: "false"
         label:
           en_US: Production
-          zh_Hans: 生产环境
     label:
       en_US: Sandbox Mode
-      zh_Hans: 沙箱模式
     placeholder:
       en_US: Select mode
-      zh_Hans: 选择模式
 extra:
   python:
     source: provider/paypack.py
