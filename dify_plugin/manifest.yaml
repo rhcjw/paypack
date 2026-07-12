@@ -4,10 +4,8 @@ author: rhcjw
 name: paypack
 label:
   en_US: PayPack
-  zh_Hans: PayPack — AI 支付
 description:
-  en_US: Universal payment middleware for AI agents. Supports USDC/ETH on-chain payments and Alipay/WeChatPay CNY payments. The only payment plugin for Chinese AI developers.
-  zh_Hans: AI Agent 通用支付中间件。支持 USDC/ETH 链上支付、支付宝和微信支付人民币。目前唯一面向中国 AI 开发者的支付插件。
+  en_US: Universal payment middleware for AI agents. Supports USDC/ETH on-chain payments and Alipay/WeChatPay CNY payments.
 icon: _assets/icon.svg
 privacy: PRIVACY.md
 tags:
