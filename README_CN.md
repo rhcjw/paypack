@@ -12,7 +12,7 @@
 
 ## 一句话说清楚 PayPack 是什么
 
-**PayPack 是目前唯一一个同时支持链上支付（USDC/ETH）和支付宝人民币支付的 AI Agent 支付中间件。**
+**PayPack 是目前唯一一个同时支持链上支付（USDC/ETH）和支付宝/微信人民币支付的 AI Agent 支付中间件。**
 
 国内 AI 开发者想让 Agent 自动付钱？两行代码，PayPack 搞定。
 
@@ -29,8 +29,8 @@
 | Stripe Agent Toolkit | 信用卡 | ❌ |
 | Nevermined | x402 协议 | ❌ |
 | Privy | 钱包基建 | ❌ |
-| **PayPack** ✅ | x402/AP2 + USDC/ETH + **支付宝** | ✅ **唯一** |
-| **PayPack WeChat** 🔒 | **微信支付 JSAPI** | ✅ 商业版 |
+| **PayPack** ✅ | x402/AP2 + USDC/ETH + **支付宝** + **微信** | ✅ **唯一** |
+| **PayPack Cloud** ☁️ | **云托管 API — 支付宝 + 微信支付** | ✅ **已上线** [rhcjw.com/pay](https://rhcjw.com/pay) |
 
 ### 如果你自己对接支付宝
 
@@ -90,6 +90,25 @@ pay = AgentPay(
 receipt = pay.send(to="0x...", amount=0.001, currency="USDC")
 ```
 
+### 不想管密钥？直接用 PayPack Cloud ☁️
+
+```bash
+# 注册获取 API Key
+curl -X POST https://rhcjw.com/pay/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "myapp"}'
+
+# 支付宝支付
+curl -X POST https://rhcjw.com/pay/v1/pay \
+  -H "Authorization: Bearer ppk_xxx" \
+  -d '{"amount": 0.01, "subject": "AI 服务", "channel": "alipay"}'
+
+# 微信支付
+curl -X POST https://rhcjw.com/pay/v1/pay \
+  -H "Authorization: Bearer ppk_xxx" \
+  -d '{"amount": 0.01, "subject": "AI 服务", "channel": "wechat"}'
+```
+
 ---
 
 ## 坐标图
@@ -99,7 +118,7 @@ receipt = pay.send(to="0x...", amount=0.001, currency="USDC")
 ```
 x402/AP2 协议  →  Ampersend、Nevermined、PayPack
 USDC/ETH 链上  →  GOAT、PayPack
-支付宝人民币   →  PayPack（唯一）
+支付宝/微信   →  PayPack（唯一）
 ```
 
 ---
@@ -124,7 +143,9 @@ PayPack 就是给这些人用的。
 - ✅ x402 协议解析（Coinbase 提出）
 - ✅ AP2 协议解析（Google 提出）
 - ✅ ETH / USDC 链上转账（Base、以太坊、Polygon、Arbitrum）
-- ✅ **支付宝人民币支付**（沙箱已验证）
+- ✅ **支付宝人民币支付**（沙箱 + 生产已验证 ¥0.10）
+- ✅ **微信支付**（生产已验证 ¥0.05 Native 扫码）
+- ✅ **PayPack Cloud 云托管**（已上线 https://rhcjw.com/pay）
 - ✅ ERC-4337 批量结算（省 Gas）
 - ✅ AWS KMS 签名（生产环境私钥不出 HSM）
 - ✅ RPC 故障转移（多节点自动切换）
@@ -132,7 +153,6 @@ PayPack 就是给这些人用的。
 - ✅ 日消费限额 + 持久化
 - ✅ LangChain 插件
 - ✅ Dify 插件 — [v0.1.0](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) 支付/查单/退款
-- ✅ **微信支付**（后端已通，商业 License）
 
 ---
 
@@ -143,6 +163,8 @@ PayPack 就是给这些人用的。
 | ETH | 0.0001 ETH | `d5f7ec94342c26a132289a9898ffd4885010089d1ddba19951117618a3992127` |
 | USDC | 0.001 USDC | `c4c24c4c1c8fd2ae738ed91cd87596ad2c672337b5ebf6d42a392adf61760e27` |
 | CNY (支付宝) | 0.63 元 | `2026070922001406640510096995` |
+| CNY (支付宝) | **¥0.10** | **生产环境** ✅ `2026071122001479581453918172`（已支付 + 已退款） |
+| CNY (微信) | **¥0.05** | **生产环境** ✅ Native 扫码支付 |
 
 ---
 
@@ -152,8 +174,9 @@ PayPack 就是给这些人用的。
 |------|------|------|
 | v0.5 | 链上支付 + LangChain + 生产特性 | ✅ 已发布 |
 | 🔌 Dify 插件 | 支付/查单/退款 | ✅ [v0.1.0](https://github.com/rhcjw/paypack/releases/tag/v0.1.0) |
-| v0.6 | 支付宝生产环境 | 🚧 开发中 |
-| v1.0 | PayPack Cloud（托管服务） | 🚧 计划中 |
+| v0.6 | 支付宝生产环境 | ✅ 已发布（¥0.10 真实支付） |
+| v0.7 | 微信支付生产环境 | ✅ 已发布（¥0.05 Native 扫码） |
+| v1.0 | PayPack Cloud 托管服务 | ✅ **已上线** https://rhcjw.com/pay |
 
 ---
 
@@ -164,6 +187,7 @@ PayPack 就是给这些人用的。
 | GitHub | https://github.com/rhcjw/paypack |
 | Gitee（国内） | https://gitee.com/rhcjw_com/paypack |
 | PyPI | https://pypi.org/project/langchain-paypack/ |
+| PayPack Cloud | https://rhcjw.com/pay |
 
 ---
 
