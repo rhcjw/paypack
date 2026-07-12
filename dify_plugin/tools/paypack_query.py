@@ -1,5 +1,5 @@
 """
-PayPack 查询工具 — 查询支付状态。
+PayPack Query Tool — Query payment status.
 """
 import json
 import os
@@ -21,7 +21,7 @@ class PaypackQueryTool(Tool):
         currency = tool_parameters.get("currency", "CNY").upper()
 
         if not trade_no:
-            return [self.create_text_message("❌ 缺少交易号/订单号")]
+            return [self.create_text_message("Error: Missing trade/order number")]
 
         credentials = self.runtime.credentials or {}
 
@@ -31,12 +31,12 @@ class PaypackQueryTool(Tool):
             else:
                 return self._query_crypto(trade_no, currency, credentials)
         except Exception as e:
-            return [self.create_text_message(f"❌ 查询失败: {str(e)}")]
+            return [self.create_text_message(f"Query failed: {str(e)}")]
 
     def _query_alipay(
         self, trade_no: str, creds: Dict[str, Any]
     ) -> list[ToolInvokeMessage]:
-        """支付宝订单查询"""
+        """Alipay order query"""
         from paypack.signer.alipay import AlipaySigner
 
         app_id = creds.get("app_id")
@@ -73,7 +73,7 @@ class PaypackQueryTool(Tool):
     def _query_crypto(
         self, tx_hash: str, currency: str, creds: Dict[str, Any]
     ) -> list[ToolInvokeMessage]:
-        """链上交易查询"""
+        """On-chain transaction query"""
         from paypack import AgentPay
 
         private_key = creds.get("private_key") or os.getenv("PRIVATE_KEY")
@@ -100,6 +100,6 @@ class PaypackQueryTool(Tool):
                 self.create_text_message(json.dumps({
                     "tx_hash": tx_hash,
                     "status": "pending_or_not_found",
-                    "message": "交易待确认或未找到",
+                    "message": "Transaction pending or not found",
                 }, ensure_ascii=False, indent=2))
             ]
