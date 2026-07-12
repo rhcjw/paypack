@@ -1,5 +1,5 @@
 """
-PayPack Dify Provider — 注册 PayPack 支付工具到 Dify 工具列表。
+PayPack Dify Provider — Register PayPack payment tools in Dify tool list.
 """
 from typing import Any, Dict
 
@@ -10,10 +10,10 @@ class PaypackProvider(ToolProvider):
 
     def _validate_credentials(self, credentials: Dict[str, Any]) -> None:
         """
-        验证用户提供的凭据是否有效。
+        Validate user-provided credentials.
 
-        支付宝模式需要: app_id, private_key, alipay_public_key
-        链上模式需要: private_key (ETH), network
+        Alipay mode requires: app_id, private_key, alipay_public_key
+        Crypto mode requires: private_key (ETH), network
         """
         payment_mode = credentials.get("payment_mode", "crypto")
 
@@ -22,14 +22,14 @@ class PaypackProvider(ToolProvider):
             for field in required:
                 if not credentials.get(field):
                     raise ToolProviderCredentialValidationError(
-                        f"支付宝模式缺少必要参数: {field}"
+                        f"Alipay mode missing required parameter: {field}"
                     )
         elif payment_mode == "crypto":
             if not credentials.get("private_key"):
                 raise ToolProviderCredentialValidationError(
-                    "链上支付模式需要提供 private_key"
+                    "Crypto payment mode requires private_key"
                 )
         else:
             raise ToolProviderCredentialValidationError(
-                f"不支持的支付模式: {payment_mode}"
+                f"Unsupported payment mode: {payment_mode}"
             )

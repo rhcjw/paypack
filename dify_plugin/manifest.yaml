@@ -8,13 +8,11 @@ label:
 description:
   en_US: Universal payment middleware for AI agents. Supports USDC/ETH on-chain payments and Alipay/WeChatPay CNY payments. The only payment plugin for Chinese AI developers.
   zh_Hans: AI Agent 通用支付中间件。支持 USDC/ETH 链上支付、支付宝和微信支付人民币。目前唯一面向中国 AI 开发者的支付插件。
-icon: icon.svg
+icon: _assets/icon.svg
+privacy: PRIVACY.md
 tags:
-  - payment
   - finance
-  - crypto
-  - alipay
-  - wechat-pay
+  - other
 created_at: "2026-07-10T02:00:00Z"
 resource:
   memory: 268435456
@@ -22,7 +20,7 @@ resource:
     tool:
       enabled: true
     endpoint:
-      enabled: true
+      enabled: false
 plugins:
   tools:
     - provider/paypack.yaml

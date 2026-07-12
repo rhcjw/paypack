@@ -1,13 +1,12 @@
 """
-PayPack 支付工具 — Dify 集成核心。
+PayPack Pay Tool — Dify integration core.
 
-AI Agent 通过此工具发起支付：
-- 链上：USDC/ETH 转账（Base/Ethereum/Polygon/Arbitrum）
-- 法币：支付宝人民币支付
+AI Agent uses this tool to make payments:
+- On-chain: USDC/ETH transfers (Base/Ethereum/Polygon/Arbitrum)
+- Fiat: Alipay CNY payments
 """
 import json
 import os
-import tempfile
 from typing import Any, Dict, Optional
 
 from dify_plugin import Tool
@@ -23,7 +22,7 @@ class PaypackPayTool(Tool):
         session: Optional[Session] = None,
     ) -> list[ToolInvokeMessage]:
         """
-        执行支付。
+        Execute payment.
         """
         recipient = tool_parameters.get("recipient", "")
         amount = float(tool_parameters.get("amount", 0))
@@ -31,7 +30,7 @@ class PaypackPayTool(Tool):
         subject = tool_parameters.get("subject", "AI Agent Payment")
 
         if amount <= 0:
-            return [self.create_text_message("❌ 金额必须大于 0")]
+            return [self.create_text_message("Error: Amount must be greater than 0")]
 
         credentials = self.runtime.credentials or {}
         payment_mode = credentials.get("payment_mode", "crypto")
@@ -42,17 +41,17 @@ class PaypackPayTool(Tool):
             else:
                 return self._pay_crypto(recipient, amount, currency, credentials)
         except Exception as e:
-            return [self.create_text_message(f"❌ 支付失败: {str(e)}")]
+            return [self.create_text_message(f"Payment failed: {str(e)}")]
 
     def _pay_crypto(
         self, to: str, amount: float, currency: str, creds: Dict[str, Any]
     ) -> list[ToolInvokeMessage]:
-        """链上支付"""
+        """On-chain payment"""
         from paypack import AgentPay
 
         private_key = creds.get("private_key") or os.getenv("PRIVATE_KEY")
         if not private_key:
-            return [self.create_text_message("❌ 未配置私钥。请在 Dify 插件设置中提供 private_key")]
+            return [self.create_text_message("Error: Private key not configured. Please set private_key in Dify plugin settings.")]
 
         network = creds.get("network", "base-sepolia")
         limit = float(creds.get("spend_limit_daily", 10.0))
@@ -83,7 +82,7 @@ class PaypackPayTool(Tool):
     def _pay_alipay(
         self, buyer_id: str, amount: float, subject: str, creds: Dict[str, Any]
     ) -> list[ToolInvokeMessage]:
-        """支付宝支付"""
+        """Alipay payment"""
         from paypack.signer.alipay import AlipaySigner
         from paypack import AgentPay
 
@@ -92,9 +91,9 @@ class PaypackPayTool(Tool):
         alipay_public_key = creds.get("alipay_public_key")
         sandbox = creds.get("sandbox", "true").lower() == "true"
 
-        # 处理私钥 —— 可能是文件路径，也可能是直接传入的 PEM 内容
+        # Handle private key — may be a file path or direct PEM content
         if private_key and ("BEGIN" in private_key or "PRIVATE KEY" in private_key):
-            # 直接传入的 PEM 字符串
+            # Direct PEM string
             signer = AlipaySigner(
                 app_id=app_id,
                 private_key=private_key,
@@ -102,7 +101,7 @@ class PaypackPayTool(Tool):
                 sandbox=sandbox,
             )
         else:
-            # 文件路径
+            # File path
             signer = AlipaySigner(
                 app_id=app_id,
                 private_key_path=private_key,

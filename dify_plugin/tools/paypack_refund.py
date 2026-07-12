@@ -1,5 +1,5 @@
 """
-PayPack 退款工具。
+PayPack Refund Tool.
 """
 import json
 from typing import Any, Dict, Optional
@@ -20,7 +20,7 @@ class PaypackRefundTool(Tool):
         refund_amount = tool_parameters.get("refund_amount")
 
         if not trade_no:
-            return [self.create_text_message("❌ 缺少交易号/订单号")]
+            return [self.create_text_message("Error: Missing trade/order number")]
 
         credentials = self.runtime.credentials or {}
 
@@ -58,4 +58,4 @@ class PaypackRefundTool(Tool):
             ]
 
         except Exception as e:
-            return [self.create_text_message(f"❌ 退款失败: {str(e)}")]
+            return [self.create_text_message(f"Refund failed: {str(e)}")]
