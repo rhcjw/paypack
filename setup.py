@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="langchain-paypack",  # 改为 langchain- 前缀，更符合搜索习惯
-    version="0.7.0",           # 支付宝生产环境支付验证通过 (¥0.10 paid + refunded)
+    version="0.7.3",           # Deprecation notice added, point to paypack-langchain
     description="LangChain tool for PayPack: AI Agent autonomous payments (HTTP 402, x402, AP2)",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -18,7 +18,7 @@ setup(
         "Tracker": "https://github.com/rhcjw/paypack/issues",
         "Gitee Mirror": "https://gitee.com/rhcjw_com/paypack",
     },
-    packages=find_packages(),
+    packages=find_packages(exclude=["paypack_wechat", "paypack_wechat.*", "build", "build.*"]),
     install_requires=[
         "langchain-core>=0.1.0,<0.3.0",
         "web3>=6.0.0,<7.0.0",

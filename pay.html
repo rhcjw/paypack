@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayPack Cloud 支付</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 40px;
+    max-width: 520px;
+    width: 100%;
+  }
+  h1 {
+    text-align: center;
+    font-size: 24px;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+  }
+  input, select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    background: white;
+  }
+  input:focus, select:focus {
+    border-color: #1677ff;
+  }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: #1677ff; color: white; }
+  .btn-primary:hover { background: #4096ff; }
+  .btn-primary:disabled { background: #a0c4ff; cursor: not-allowed; }
+  .btn-success { background: #52c41a; color: white; }
+  .btn-success:hover { background: #73d13d; }
+
+  .qrcode-wrapper {
+    display: none;
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .qrcode-wrapper.show { display: block; }
+  #qrcode {
+    display: inline-block;
+    padding: 16px;
+    background: white;
+    border: 2px solid #f0f0f0;
+    border-radius: 12px;
+  }
+  #qrcode img { border-radius: 8px; }
+  .amount-display {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 12px 0 4px;
+  }
+  .subject-display {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .order-id {
+    color: #999;
+    font-size: 12px;
+    word-break: break-all;
+    margin-bottom: 16px;
+  }
+  .hint {
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #d46b08;
+    margin-bottom: 16px;
+  }
+  .error {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #cf1322;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .loading {
+    display: none;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .loading.show { display: block; }
+  .spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f0f0f0;
+    border-top-color: #1677ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-section {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .status-section.show { display: block; }
+  .status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .status-pending { background: #fff7e6; color: #d46b08; }
+  .status-success { background: #f6ffed; color: #52c41a; }
+  .status-failed  { background: #fff2f0; color: #cf1322; }
+
+  .channel-group { display: flex; gap: 8px; }
+  .channel-btn {
+    flex: 1; padding: 10px 12px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-align: center;
+  }
+
+  .crypto-fields { display: none; }
+  .crypto-fields.show { display: block; }
+
+  .tx-hash {
+    font-family: monospace; font-size: 13px;
+    background: #f5f7fa; padding: 8px 12px; border-radius: 8px;
+    word-break: break-all; margin: 8px 0;
+  }
+  .sdk-code {
+    background: #1a1a2e; color: #e0e0e0; padding: 16px;
+    border-radius: 10px; font-size: 13px; text-align: left;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    line-height: 1.6; overflow-x: auto; margin: 12px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🔗 PayPack 支付</h1>
+  <p class="subtitle">AI Agent 支付代理服务 · 法币 + 数字货币</p>
+
+  <!-- API Key -->
+  <div class="form-group">
+    <label for="apiKey">API Key（法币 CNY 必需，数字货币可选）</label>
+    <input id="apiKey" type="text" placeholder="输入你的 API Key" autocomplete="off">
+  </div>
+
+  <!-- 金额 -->
+  <div class="form-group">
+    <label for="amount">金额</label>
+    <input id="amount" type="number" step="0.0001" min="0.0001" placeholder="例如 0.10" value="0.10">
+  </div>
+
+  <!-- 商品描述 -->
+  <div class="form-group">
+    <label for="subject">商品描述</label>
+    <input id="subject" type="text" placeholder="例如 AI 数据订阅" value="AI 服务">
+  </div>
+
+  <!-- 支付通道 -->
+  <div class="form-group">
+    <label>支付通道</label>
+    <div class="channel-group">
+      <button class="channel-btn active" id="chAlipay" onclick="selectChannel('alipay')" style="border:2px solid #1677ff;background:#1677ff;color:white;">💰 支付宝</button>
+      <button class="channel-btn" id="chWechat" onclick="selectChannel('wechat')" style="border:2px solid #e0e0e0;background:white;color:#333;">💚 微信支付</button>
+      <button class="channel-btn" id="chCrypto" onclick="selectChannel('crypto')" style="border:2px solid #e0e0e0;background:white;color:#333;">⚡ USDC / ETH</button>
+    </div>
+  </div>
+
+  <!-- 数字货币专用字段 -->
+  <div class="crypto-fields" id="cryptoFields">
+    <div class="form-group">
+      <label for="cryptoCurrency">币种</label>
+      <select id="cryptoCurrency">
+        <option value="USDC">USDC（多链稳定币）</option>
+        <option value="ETH">ETH（原生币）</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="network">网络</label>
+      <select id="network">
+        <option value="base-mainnet">Base Mainnet</option>
+        <option value="base-sepolia">Base Sepolia（测试网）</option>
+        <option value="ethereum-mainnet">Ethereum Mainnet</option>
+        <option value="polygon-mainnet">Polygon Mainnet</option>
+        <option value="arbitrum-mainnet">Arbitrum Mainnet</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="toAddress">收款地址</label>
+      <input id="toAddress" type="text" placeholder="0x... 收款钱包地址">
+    </div>
+    <div class="form-group">
+      <label for="privateKey">私钥（仅浏览器签名，不传服务器）</label>
+      <input id="privateKey" type="password" placeholder="0x... 你的钱包私钥">
+    </div>
+  </div>
+
+  <!-- 错误提示 -->
+  <div class="error" id="errorMsg"></div>
+
+  <!-- 提示 -->
+  <div class="hint" id="hint">用 <b>支付宝 App 扫二维码</b> 完成支付</div>
+
+  <!-- 生成按钮 -->
+  <button class="btn btn-primary" id="payBtn" onclick="createPayment()">生成收款码 / 发起支付</button>
+
+  <!-- 加载 -->
+  <div class="loading" id="loading"><div class="spinner"></div></div>
+
+  <!-- 结果区域 -->
+  <div class="qrcode-wrapper" id="qrWrapper">
+    <div id="qrcode"></div>
+    <div class="amount-display" id="displayAmount">¥0.00</div>
+    <div class="subject-display" id="displaySubject"></div>
+    <div class="order-id" id="displayOrderId"></div>
+
+    <!-- 数字货币结果（替代二维码） -->
+    <div id="cryptoResult" style="display:none;">
+      <div class="sdk-code" id="cryptoTxInfo"></div>
+      <p style="font-size:13px;color:#666;margin:8px 0;">💡 也可以直接用 Python SDK 发起链上支付：</p>
+      <div class="sdk-code" id="sdkExample"></div>
+    </div>
+
+    <button class="btn btn-success" onclick="checkPayment()" id="checkBtn">🔄 查询支付状态</button>
+
+    <!-- 查询状态 -->
+    <div class="status-section" id="statusSection">
+      <p><span class="status-badge" id="statusBadge">等待中</span></p>
+      <p style="margin-top:8px;font-size:13px;color:#666;" id="statusDetail"></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentOrderId = '';
+let currentChannel = 'alipay';
+
+function selectChannel(ch) {
+  currentChannel = ch;
+
+  // Reset all buttons
+  document.querySelectorAll('.channel-btn').forEach(b => {
+    b.style.border = '2px solid #e0e0e0';
+    b.style.background = 'white';
+    b.style.color = '#333';
+  });
+
+  // Style selected
+  const btnMap = { alipay: 'chAlipay', wechat: 'chWechat', crypto: 'chCrypto' };
+  const colors = { alipay: '#1677ff', wechat: '#07c160', crypto: '#722ed1' };
+  const sel = document.getElementById(btnMap[ch]);
+  sel.style.border = `2px solid ${colors[ch]}`;
+  sel.style.background = colors[ch];
+  sel.style.color = 'white';
+
+  // Toggle crypto fields
+  document.getElementById('cryptoFields').classList.toggle('show', ch === 'crypto');
+
+  // Update hint
+  const hint = document.getElementById('hint');
+  if (ch === 'alipay') hint.innerHTML = '用 <b>支付宝 App 扫二维码</b> 完成支付';
+  else if (ch === 'wechat') hint.innerHTML = '用 <b>微信扫一扫二维码</b> 完成支付';
+  else hint.innerHTML = '⚡ <b>链上交易</b>，签名后直接广播，无需扫码';
+  document.getElementById('hint').style.display = ch === 'crypto' ? 'none' : 'block';
+}
+
+function createPayment() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const amount = document.getElementById('amount').value;
+  const subject = document.getElementById('subject').value.trim();
+
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('qrWrapper').classList.remove('show');
+  document.getElementById('statusSection').classList.remove('show');
+  document.getElementById('cryptoResult').style.display = 'none';
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('payBtn').disabled = true;
+
+  if (!amount || parseFloat(amount) <= 0) { showError('请输入有效金额'); return; }
+  if (!subject) { showError('请输入商品描述'); return; }
+
+  if (currentChannel === 'crypto') {
+    // —— Crypto path (client-side via paypack-core) ——
+    const currency = document.getElementById('cryptoCurrency').value;
+    const network = document.getElementById('network').value;
+    const to = document.getElementById('toAddress').value.trim();
+    const pk = document.getElementById('privateKey').value.trim();
+
+    if (!to) { showError('请输入收款地址'); return; }
+    if (!pk) { showError('请输入私钥'); return; }
+
+    // We can't run Python SDK in browser, so show SDK instructions
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('payBtn').disabled = false;
+
+    document.getElementById('displayAmount').textContent = parseFloat(amount) + ' ' + currency;
+    document.getElementById('displaySubject').textContent = subject;
+    document.getElementById('displayOrderId').textContent = '网络: ' + network + ' → ' + to.slice(0,10) + '...' + to.slice(-6);
+
+    document.getElementById('cryptoResult').style.display = 'block';
+    document.getElementById('cryptoTxInfo').innerHTML =
+      '⚡ 链上支付准备就绪\n\n' +
+      '请在终端执行以下命令（浏览器环境不直接签名）：\n\n' +
+      `pip install paypack-langchain\n` +
+      `python -c "\nfrom paypack_langchain import PayPackTool\n` +
+      `tool = PayPackTool(private_key='${pk.slice(0,10)}...', network='${network}', broadcast=True)\n` +
+      `result = tool.run(amount=${amount}, subject='${subject}', currency='${currency}', to='${to}')\n` +
+      `print(result)\n"`;
+
+    document.getElementById('sdkExample').textContent =
+      `# Python SDK 一句话支付\n` +
+      `from paypack_langchain import PayPackTool\n\n` +
+      `tool = PayPackTool(\n` +
+      `    private_key="0x...",\n` +
+      `    network="${network}",\n` +
+      `    broadcast=True,\n` +
+      `)\n` +
+      `result = tool.run(\n` +
+      `    amount=${amount},\n` +
+      `    subject="${subject}",\n` +
+      `    currency="${currency}",\n` +
+      `    to="${to}",\n` +
+      `)\n` +
+      `print(result)  # → Tx hash + explorer link`;
+
+    document.getElementById('qrWrapper').classList.add('show');
+    document.getElementById('checkBtn').style.display = 'none';
+    return;
+  }
+
+  // —— CNY path (Cloud API) ——
+  if (!apiKey) { showError('请输入 API Key'); return; }
+
+  fetch('/pay/v1/pay', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey,
+    },
+    body: JSON.stringify({ amount: parseFloat(amount), currency: 'CNY', subject, channel: currentChannel }),
+  })
+  .then(r => r.json().then(data => ({ status: r.status, data })))
+  .then(({ status, data }) => {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('payBtn').disabled = false;
+
+    if (status === 402) { showError('余额不足，请先充值'); return; }
+    if (status !== 200) { showError(data.detail || data.error || '请求失败'); return; }
+
+    currentOrderId = data.order_id;
+    showQRCode(data);
+  })
+  .catch(err => {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('payBtn').disabled = false;
+    showError('网络错误: ' + err.message);
+  });
+}
+
+function showQRCode(data) {
+  document.getElementById('displayAmount').textContent = '¥' + data.amount.toFixed(2);
+  document.getElementById('displaySubject').textContent = document.getElementById('subject').value;
+  document.getElementById('displayOrderId').textContent = '订单号: ' + data.order_id;
+  document.getElementById('checkBtn').style.display = 'block';
+
+  const qrContainer = document.getElementById('qrcode');
+  qrContainer.innerHTML = '';
+  new QRCode(qrContainer, {
+    text: data.pay_url,
+    width: 256, height: 256,
+    colorDark: '#1a1a2e', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.L,
+  });
+
+  document.getElementById('qrWrapper').classList.add('show');
+}
+
+function checkPayment() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!currentOrderId) return;
+
+  document.getElementById('statusSection').classList.remove('show');
+
+  fetch('/pay/v1/query?order_id=' + currentOrderId, {
+    headers: { 'Authorization': 'Bearer ' + apiKey },
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('statusSection').classList.add('show');
+    const badge = document.getElementById('statusBadge');
+    const detail = document.getElementById('statusDetail');
+
+    if (data.status === 'success') {
+      badge.className = 'status-badge status-success';
+      badge.textContent = '✅ 已支付';
+      detail.textContent = '支付成功！金额 ¥' + data.amount.toFixed(2);
+    } else if (data.status === 'pending') {
+      badge.className = 'status-badge status-pending';
+      badge.textContent = '⏳ 待支付';
+      detail.textContent = '买家尚未完成支付，请扫码支付';
+    } else {
+      badge.className = 'status-badge status-failed';
+      badge.textContent = '❌ ' + data.status;
+      detail.textContent = '订单状态异常';
+    }
+  })
+  .catch(err => {
+    document.getElementById('statusSection').classList.add('show');
+    document.getElementById('statusBadge').className = 'status-badge status-failed';
+    document.getElementById('statusBadge').textContent = '❌ 查询失败';
+    document.getElementById('statusDetail').textContent = err.message;
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('payBtn').disabled = false;
+}
+</script>
+
+</body>
+</html>

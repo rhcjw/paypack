@@ -9,8 +9,11 @@ identity:
       - USDC/ETH on-chain (Base, Ethereum, Polygon, Arbitrum)
       - CNY via Alipay or WeChat Pay
       
-      For Alipay/WeChat: set currency="CNY" and provide buyer_id.
-      For crypto: set currency="USDC" or "ETH" and provide recipient wallet address.
+      For Alipay: set currency="CNY" and provide Alipay user ID.
+      For WeChat: set currency="CNY" (add "wechat" in subject to prefer WeChat).
+      For crypto: set currency="USDC" or "ETH" and provide wallet address.
+      
+      Auto-routes to the correct channel. Configure all 3 channels in one plugin instance.
 parameters:
   - name: recipient
     type: string

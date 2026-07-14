@@ -59,7 +59,7 @@ if response.status_code == 402:
 
 ## Dify 插件
 
-已经打包发到 Dify 官方插件市场（PR [#3420](https://github.com/langgenius/dify-official-plugins/pull/3420) 审核中）：
+已经打包发到 Dify 官方插件市场（PR [#2688](https://github.com/langgenius/dify-plugins/pull/2688) 审核中）：
 
 > Dify → 插件 → 从 GitHub 安装 → 输入 `https://github.com/rhcjw/paypack`
 
@@ -103,7 +103,7 @@ Dify、Coze、百度千帆、通义百炼——这些平台加起来几百万开
 | 支付宝 CNY | ✅ 沙箱已通 |
 | 微信支付 CNY | ✅ 后端已通（商业版） |
 | LangChain 插件 | ✅ 已发布 PyPI |
-| Dify 插件 | ✅ [PR #3420](https://github.com/langgenius/dify-official-plugins/pull/3420) 审核中 |
+| Dify 插件 | ✅ [PR #2688](https://github.com/langgenius/dify-plugins/pull/2688) 审核中 |
 
 安全性：日消费限额、余额检查、RPC 故障转移、交易重试、AWS KMS 签名（私钥不出 HSM）——都已内置。
 

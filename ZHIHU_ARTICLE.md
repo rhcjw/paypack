@@ -84,7 +84,7 @@ pay = AgentPay(signer=signer, network="wechat")
 
 > Dify → 插件 → 从 GitHub 安装 → `https://github.com/rhcjw/paypack`
 
-已提交 Dify 官方插件市场 PR [#3420](https://github.com/langgenius/dify-official-plugins/pull/3420)，审核通过后全 Dify 用户搜"支付"就能看到。
+已提交 Dify 官方插件市场 PR [#2688](https://github.com/langgenius/dify-plugins/pull/2688)，审核通过后全 Dify 用户搜"支付"就能看到。
 
 三个工具：**支付**（USDC/ETH/CNY 三币种）+ **查单** + **退款**。
 
@@ -99,7 +99,7 @@ pay = AgentPay(signer=signer, network="wechat")
 | 支付宝 CNY 沙箱 | ✅ 已通 |
 | 微信支付 CNY | ✅ 后端已通（商业 License） |
 | LangChain 插件 | ✅ PyPI 已发布 |
-| Dify 插件 | ✅ PR #3420 审核中 |
+| Dify 插件 | ✅ PR #2688 审核中 |
 | ERC-4337 批量结算 / RPC 故障转移 / 交易重试 | ✅ 已内置 |
 
 安全机制：日消费限额、余额检查、AWS KMS 签名（生产环境私钥不出 HSM）——全部内置。
@@ -124,7 +124,7 @@ USDC/ETH 链上  →  GOAT、PayPack
 - Gitee（国内更快）：https://gitee.com/rhcjw_com/paypack
 - PyPI：`pip install langchain-paypack`
 - 快速入门教程：https://github.com/rhcjw/paypack/blob/master/QUICKSTART.md
-- Dify 插件 PR：https://github.com/langgenius/dify-official-plugins/pull/3420
+- Dify 插件 PR：https://github.com/langgenius/dify-plugins/pull/2688
 
 ---
 

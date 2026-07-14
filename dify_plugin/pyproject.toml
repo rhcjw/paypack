@@ -1,10 +1,10 @@
 [project]
 name = "paypack"
 version = "0.1.0"
-description = "AI Agent universal payment middleware — USDC/ETH + Alipay/WeChatPay CNY"
+description = "x402 (Coinbase) + AP2 (Google) settlement client for Dify Agents. Settles metered API calls via USDC/ETH (Base/Ethereum/Polygon/Arbitrum) or CNY acquirers (Alipay/WeChat)."
 requires-python = ">=3.12"
 dependencies = [
-    "langchain-paypack>=0.5.0",
+    "langchain-paypack>=0.7.1",
 ]
 
 [build-system]

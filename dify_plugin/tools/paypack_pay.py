@@ -1,9 +1,12 @@
 """
 PayPack Pay Tool — Dify integration core.
 
-AI Agent uses this tool to make payments:
-- On-chain: USDC/ETH transfers (Base/Ethereum/Polygon/Arbitrum)
-- Fiat: Alipay CNY payments
+AI Agent uses this tool to make payments.
+Auto-routes to the correct channel based on currency:
+- USDC / ETH  → Crypto (on-chain)
+- CNY + alipay credentials → Alipay
+- CNY + wechat credentials  → WeChat Pay
+All channels can be configured at once in a single plugin instance.
 """
 import json
 import os
@@ -21,9 +24,7 @@ class PaypackPayTool(Tool):
         tool_parameters: Dict[str, Any],
         session: Optional[Session] = None,
     ) -> list[ToolInvokeMessage]:
-        """
-        Execute payment.
-        """
+        """Execute payment. Auto-routes by currency."""
         recipient = tool_parameters.get("recipient", "")
         amount = float(tool_parameters.get("amount", 0))
         currency = tool_parameters.get("currency", "USDC").upper()
@@ -33,25 +34,45 @@ class PaypackPayTool(Tool):
             return [self.create_text_message("Error: Amount must be greater than 0")]
 
         credentials = self.runtime.credentials or {}
-        payment_mode = credentials.get("payment_mode", "crypto")
 
         try:
-            if currency == "CNY" or payment_mode == "alipay":
-                return self._pay_alipay(recipient, amount, subject, credentials)
-            else:
+            if currency in ("USDC", "ETH"):
                 return self._pay_crypto(recipient, amount, currency, credentials)
+            elif currency == "CNY":
+                has_alipay = bool(credentials.get("alipay_app_id"))
+                has_wechat = bool(credentials.get("wechat_mchid"))
+                if has_alipay and not has_wechat:
+                    return self._pay_alipay(recipient, amount, subject, credentials)
+                elif has_wechat and not has_alipay:
+                    return self._pay_wechat(recipient, amount, subject, credentials)
+                elif has_alipay and has_wechat:
+                    # Both configured — check subject for hint
+                    if subject and "wechat" in subject.lower():
+                        return self._pay_wechat(recipient, amount, subject, credentials)
+                    return self._pay_alipay(recipient, amount, subject, credentials)
+                else:
+                    return [self.create_text_message(
+                        "Error: CNY selected but neither Alipay nor WeChat Pay configured. "
+                        "Set up Alipay or WeChat Pay in plugin settings."
+                    )]
+            else:
+                return [self.create_text_message(f"Unsupported currency '{currency}'. Use USDC, ETH, or CNY.")]
         except Exception as e:
             return [self.create_text_message(f"Payment failed: {str(e)}")]
+
+    # ── Crypto ──────────────────────────────────────────
 
     def _pay_crypto(
         self, to: str, amount: float, currency: str, creds: Dict[str, Any]
     ) -> list[ToolInvokeMessage]:
-        """On-chain payment"""
+        """On-chain USDC/ETH payment."""
         from paypack import AgentPay
 
-        private_key = creds.get("private_key") or os.getenv("PRIVATE_KEY")
+        private_key = creds.get("crypto_private_key") or os.getenv("PRIVATE_KEY")
         if not private_key:
-            return [self.create_text_message("Error: Private key not configured. Please set private_key in Dify plugin settings.")]
+            return [self.create_text_message(
+                "Error: Crypto private key not configured. Set crypto_private_key in plugin settings."
+            )]
 
         network = creds.get("network", "base-sepolia")
         limit = float(creds.get("spend_limit_daily", 10.0))
@@ -68,6 +89,7 @@ class PaypackPayTool(Tool):
 
         return [
             self.create_text_message(json.dumps({
+                "channel": "crypto",
                 "status": "success",
                 "currency": currency,
                 "amount": amount,
@@ -79,21 +101,21 @@ class PaypackPayTool(Tool):
             }, ensure_ascii=False, indent=2))
         ]
 
+    # ── Alipay ──────────────────────────────────────────
+
     def _pay_alipay(
         self, buyer_id: str, amount: float, subject: str, creds: Dict[str, Any]
     ) -> list[ToolInvokeMessage]:
-        """Alipay payment"""
+        """Alipay CNY payment."""
         from paypack.signer.alipay import AlipaySigner
         from paypack import AgentPay
 
-        app_id = creds.get("app_id")
-        private_key = creds.get("private_key")
+        app_id = creds.get("alipay_app_id")
+        private_key = creds.get("alipay_private_key")
         alipay_public_key = creds.get("alipay_public_key")
-        sandbox = creds.get("sandbox", "true").lower() == "true"
+        sandbox = creds.get("alipay_sandbox", "true").lower() == "true"
 
-        # Handle private key — may be a file path or direct PEM content
         if private_key and ("BEGIN" in private_key or "PRIVATE KEY" in private_key):
-            # Direct PEM string
             signer = AlipaySigner(
                 app_id=app_id,
                 private_key=private_key,
@@ -101,7 +123,6 @@ class PaypackPayTool(Tool):
                 sandbox=sandbox,
             )
         else:
-            # File path
             signer = AlipaySigner(
                 app_id=app_id,
                 private_key_path=private_key,
@@ -121,6 +142,7 @@ class PaypackPayTool(Tool):
 
         return [
             self.create_text_message(json.dumps({
+                "channel": "alipay",
                 "status": "success",
                 "currency": "CNY",
                 "amount": amount,
@@ -128,5 +150,44 @@ class PaypackPayTool(Tool):
                 "trade_no": receipt.get("trade_no"),
                 "alipay_status": alipay_resp.get("code"),
                 "alipay_message": alipay_resp.get("msg", alipay_resp.get("sub_msg", "")),
+            }, ensure_ascii=False, indent=2))
+        ]
+
+    # ── WeChat Pay ──────────────────────────────────────
+
+    def _pay_wechat(
+        self, openid: str, amount: float, subject: str, creds: Dict[str, Any]
+    ) -> list[ToolInvokeMessage]:
+        """WeChat Pay CNY payment."""
+        from paypack import AgentPay
+        from paypack_wechat import WechatSigner
+
+        signer = WechatSigner(
+            mchid=creds.get("wechat_mchid"),
+            serial_no=creds.get("wechat_serial_no"),
+            private_key_path=creds.get("wechat_private_key"),
+            api_v3_key=creds.get("wechat_api_v3_key"),
+            license_key=creds.get("wechat_license_key"),
+            app_id=creds.get("wechat_app_id"),
+            notify_url=creds.get("wechat_notify_url"),
+        )
+
+        pay = AgentPay(signer=signer, network="wechat")
+        result = pay.send(
+            to=openid,
+            amount=amount,
+            currency="CNY",
+            subject=subject,
+            app_id=creds.get("wechat_app_id"),
+        )
+
+        return [
+            self.create_text_message(json.dumps({
+                "channel": "wechat",
+                "status": "success",
+                "currency": "CNY",
+                "amount": amount,
+                "subject": subject,
+                "prepay_params": result.get("prepay_params"),
             }, ensure_ascii=False, indent=2))
         ]

@@ -1,8 +1,14 @@
 # PayPack — AI Agent Payment Plugin
 
+> **🌐 Dual-channel · Neutral · Independent**
+>
+> PayPack is the **world's only** Agent payment middleware supporting **Alipay AND WeChat Pay** dual-channel in a single integration.
+> PayPack stays neutral — not bound to Alipay, not bound to Tencent, not bound to any tech giant ecosystem.
+> Private keys remain **local** in Dify's Credential Vault — never transmitted to any third-party cloud.
+
 > Two lines of code, let your Dify AI Agent pay by itself.
 
-PayPack is the first Dify plugin that supports **both on-chain crypto and Chinese fiat payments** in a single integration. Your AI agent can send USDC/ETH on-chain, or create Alipay orders for CNY payments — all from within a Dify workflow.
+PayPack is the first Dify plugin that supports **both on-chain crypto and Chinese fiat payments** in a single integration. Your AI agent can send USDC/ETH on-chain, or create Alipay/WeChat Pay orders for CNY payments — all from within a Dify workflow.
 
 ---
 
@@ -160,7 +166,7 @@ Refunds an Alipay order. Only successful payments can be refunded.
 
 - **Dify** 1.0+ (Community Edition or Cloud)
 - **Python** 3.12+ (handled by Dify plugin runtime)
-- **PayPack SDK** — auto-installed via `langchain-paypack>=0.5.0` dependency
+- **PayPack SDK** — auto-installed via `paypack-langchain>=0.1.2` dependency
 - **Alipay merchant account** — required for CNY payments (sandbox available for testing)
 
 ---

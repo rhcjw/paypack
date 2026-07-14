@@ -1,12 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#3B82F6"/>
-      <stop offset="100%" stop-color="#8B5CF6"/>
+    <linearGradient id="payGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="chipGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#g)"/>
-  <path d="M32 16L44 22v12c0 6.6-5 12.8-12 15-7-2.2-12-8.4-12-15V22l12-6z" fill="white" opacity="0.95"/>
-  <path d="M32 22v18" stroke="url(#g)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M24 28l8-8 8 8" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="url(#payGrad)"/>
+  <circle cx="128" cy="128" r="108" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  <!-- Card -->
+  <rect x="56" y="82" width="144" height="100" rx="16" fill="url(#cardGrad)"/>
+  <rect x="76" y="100" width="32" height="24" rx="4" fill="url(#chipGrad)"/>
+  <line x1="80" y1="112" x2="104" y2="112" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+  <!-- Wave -->
+  <path d="M72 144 Q96 132 120 144 Q144 156 168 144" stroke="#3B82F6" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M72 152 Q96 140 120 152 Q144 164 168 152" stroke="#3B82F6" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.4"/>
+  <!-- Arrows -->
+  <path d="M176 112 L200 128 L176 144" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="200" y1="128" x2="56" y2="128" stroke="white" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 4" opacity="0.7"/>
+  <path d="M80 112 L56 128 L80 144" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Dots -->
+  <circle cx="128" cy="170" r="3" fill="#3B82F6" opacity="0.6"/>
+  <circle cx="143" cy="170" r="3" fill="#3B82F6" opacity="0.4"/>
+  <circle cx="158" cy="170" r="3" fill="#3B82F6" opacity="0.2"/>
+  <!-- Check -->
+  <circle cx="196" cy="72" r="18" fill="#10B981"/>
+  <path d="M188 72 L193 77 L204 66" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

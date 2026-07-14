@@ -1,16 +1,16 @@
-version: 0.1.0
+version: 0.1.2
 type: plugin
 author: rhcjw
 name: paypack
 label:
-  en_US: PayPack
+  en_US: PayPack (x402/AP2 Settlement)
 description:
-  en_US: Universal payment middleware for AI agents. Supports USDC/ETH on-chain payments and Alipay/WeChatPay CNY payments.
+  en_US: x402/AP2 settlement client for Dify Agents. Settles metered API calls via USDC/ETH (Base/Ethereum/Polygon/Arbitrum) or CNY acquirers (Alipay/WeChat). Keys in Dify credential vault; no arbitrary transfers.
 icon: _assets/icon.svg
 privacy: PRIVACY.md
 tags:
-  - finance
-  - other
+  - blockchain
+  - tool
 created_at: "2026-07-10T02:00:00Z"
 resource:
   memory: 268435456
@@ -30,4 +30,4 @@ meta:
     entrypoint: main
     language: python
     version: "3.12"
-  version: 0.1.0
+  version: 0.1.2

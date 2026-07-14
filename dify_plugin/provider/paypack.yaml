@@ -2,44 +2,30 @@ identity:
   author: rhcjw
   name: paypack
   label:
-    en_US: PayPack
+    en_US: PayPack (x402/AP2 Settlement)
   description:
-    en_US: AI Agent universal payment middleware. Pay with USDC, ETH, or CNY (Alipay/WeChat Pay).
+    en_US: x402/AP2 settlement client for Dify Agents. Settles metered API calls via USDC/ETH (Base/Ethereum/Polygon/Arbitrum) or CNY acquirers (Alipay/WeChat). No arbitrary transfers.
   icon: _assets/icon.svg
   tags:
-    - finance
-    - other
+    - blockchain
+    - tool
 credentials_for_provider:
-  payment_mode:
-    type: select
-    required: true
-    default: crypto
-    options:
-      - value: crypto
-        label:
-          en_US: Crypto (USDC/ETH on-chain)
-      - value: alipay
-        label:
-          en_US: Alipay (CNY fiat)
-    label:
-      en_US: Payment Mode
-    placeholder:
-      en_US: Select payment mode
-  private_key:
+  # --- Crypto (USDC/ETH) ---
+  crypto_private_key:
     type: secret-input
-    required: true
+    required: false
     label:
-      en_US: Private Key
+      en_US: Crypto Private Key
     placeholder:
-      en_US: ETH private key or Alipay merchant private key (PEM)
+      en_US: ETH private key (0x...)
     help:
-      en_US: "For crypto: ETH private key. For Alipay: merchant RSA private key."
+      en_US: Required for USDC/ETH payments. Your Ethereum wallet private key.
   network:
     type: text-input
     required: false
     default: base-sepolia
     label:
-      en_US: Network
+      en_US: Blockchain Network
     placeholder:
       en_US: base-sepolia
     help:
@@ -53,7 +39,7 @@ credentials_for_provider:
     placeholder:
       en_US: "10.0"
     help:
-      en_US: Maximum daily spend for AI agent (in the chosen currency)
+      en_US: Maximum daily spend for crypto payments (in the chosen currency)
   broadcast:
     type: select
     required: false
@@ -69,7 +55,9 @@ credentials_for_provider:
       en_US: Broadcast Transaction
     placeholder:
       en_US: Select
-  app_id:
+
+  # --- Alipay ---
+  alipay_app_id:
     type: text-input
     required: false
     label:
@@ -77,7 +65,16 @@ credentials_for_provider:
     placeholder:
       en_US: 2021...
     help:
-      en_US: Required for Alipay mode. Get this from Alipay Open Platform.
+      en_US: Required for Alipay CNY payments. Get this from Alipay Open Platform.
+  alipay_private_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: Alipay Private Key
+    placeholder:
+      en_US: "-----BEGIN RSA PRIVATE KEY-----"
+    help:
+      en_US: Required for Alipay payments. Your Alipay merchant RSA private key (PEM).
   alipay_public_key:
     type: secret-input
     required: false
@@ -86,8 +83,8 @@ credentials_for_provider:
     placeholder:
       en_US: "-----BEGIN PUBLIC KEY-----"
     help:
-      en_US: Alipay production public key (PEM). Required for Alipay mode.
-  sandbox:
+      en_US: Required for Alipay payments. Alipay production public key (PEM).
+  alipay_sandbox:
     type: select
     required: false
     default: "true"
@@ -99,9 +96,74 @@ credentials_for_provider:
         label:
           en_US: Production
     label:
-      en_US: Sandbox Mode
+      en_US: Alipay Sandbox Mode
     placeholder:
       en_US: Select mode
+
+  # --- WeChat Pay ---
+  wechat_mchid:
+    type: text-input
+    required: false
+    label:
+      en_US: WeChat Merchant ID
+    placeholder:
+      en_US: Merchant ID
+    help:
+      en_US: Required for WeChat Pay. Your WeChat merchant ID.
+  wechat_serial_no:
+    type: text-input
+    required: false
+    label:
+      en_US: WeChat Certificate Serial No.
+    placeholder:
+      en_US: Certificate serial number
+    help:
+      en_US: Required for WeChat Pay.
+  wechat_private_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: WeChat Private Key
+    placeholder:
+      en_US: "-----BEGIN PRIVATE KEY-----"
+    help:
+      en_US: Required for WeChat Pay. Your WeChat merchant private key.
+  wechat_api_v3_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: WeChat APIv3 Key
+    placeholder:
+      en_US: APIv3 key
+    help:
+      en_US: Required for WeChat Pay.
+  wechat_app_id:
+    type: text-input
+    required: false
+    label:
+      en_US: WeChat App ID
+    placeholder:
+      en_US: Mini Program AppID
+    help:
+      en_US: Required for WeChat Pay. Your Mini Program or App AppID.
+  wechat_notify_url:
+    type: text-input
+    required: false
+    label:
+      en_US: WeChat Notify URL
+    placeholder:
+      en_US: https://your-domain.com/wechat/notify
+    help:
+      en_US: Required for WeChat Pay. Callback URL for payment notifications.
+  wechat_license_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: WeChat License Key
+    placeholder:
+      en_US: PAYPACK-WECHAT-v1-...
+    help:
+      en_US: Required for WeChat Pay. PayPack WeChat module license key.
 extra:
   python:
     source: provider/paypack.py

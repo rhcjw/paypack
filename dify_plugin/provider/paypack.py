@@ -6,30 +6,36 @@ from typing import Any, Dict
 from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
+
 class PaypackProvider(ToolProvider):
 
     def _validate_credentials(self, credentials: Dict[str, Any]) -> None:
         """
-        Validate user-provided credentials.
-
-        Alipay mode requires: app_id, private_key, alipay_public_key
-        Crypto mode requires: private_key (ETH), network
+        Validate user-provided credentials. Supports all channels in one config.
+        At least one payment channel must be configured.
         """
-        payment_mode = credentials.get("payment_mode", "crypto")
+        has_crypto = bool(credentials.get("crypto_private_key"))
+        has_alipay = bool(credentials.get("alipay_app_id") and credentials.get("alipay_private_key"))
+        has_wechat = bool(credentials.get("wechat_mchid") and credentials.get("wechat_private_key"))
 
-        if payment_mode == "alipay":
-            required = ["app_id", "private_key", "alipay_public_key"]
-            for field in required:
-                if not credentials.get(field):
-                    raise ToolProviderCredentialValidationError(
-                        f"Alipay mode missing required parameter: {field}"
-                    )
-        elif payment_mode == "crypto":
-            if not credentials.get("private_key"):
-                raise ToolProviderCredentialValidationError(
-                    "Crypto payment mode requires private_key"
-                )
-        else:
+        if not has_crypto and not has_alipay and not has_wechat:
             raise ToolProviderCredentialValidationError(
-                f"Unsupported payment mode: {payment_mode}"
+                "At least one payment channel must be configured. "
+                "Fill in Crypto, Alipay, or WeChat Pay credentials."
             )
+
+        if has_alipay:
+            if not credentials.get("alipay_public_key"):
+                raise ToolProviderCredentialValidationError(
+                    "Alipay mode requires: alipay_public_key"
+                )
+
+        if has_wechat:
+            missing_wx = []
+            for f in ["wechat_serial_no", "wechat_api_v3_key", "wechat_app_id", "wechat_license_key"]:
+                if not credentials.get(f):
+                    missing_wx.append(f)
+            if missing_wx:
+                raise ToolProviderCredentialValidationError(
+                    f"WeChat Pay missing: {', '.join(missing_wx)}"
+                )
