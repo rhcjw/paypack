@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # 优先读取环境变量，否则使用测试私钥
     test_key = os.getenv(
         "PRIVATE_KEY",
-        "0x6fd8aeba2983ea3eade0f68165376631d285827e74bcb69282c6783d6fb1b356"
+        "0x你的ETH私钥"
     )
     tool = create_paypack_tool(
         private_key=test_key,

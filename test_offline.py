@@ -20,7 +20,7 @@ print("   ✅ 全部导入成功")
 
 # ====== 2. Signer ======
 print("\n2/7  Signer 签名器")
-KEY = "0x6fd8aeba2983ea3eade0f68165376631d285827e74bcb69282c6783d6fb1b356"
+KEY = "0x你的ETH私钥"
 ADDR = "0x9cbF3Ca5185Ca55C804c2c4b726De212A17734F8"
 
 s = LocalSigner(private_key=KEY)

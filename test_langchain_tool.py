@@ -7,7 +7,7 @@ from langchain_tool import PayPackTool
 
 # 用你的测试钱包配置
 tool = PayPackTool(
-    private_key="0x6fd8aeba2983ea3eade0f68165376631d285827e74bcb69282c6783d6fb1b356",
+    private_key="0x你的ETH私钥",
     wallet_address="0x9cbF3Ca5185Ca55C804c2c4b726De212A17734F8",
     spend_limit_daily=0.01
 )

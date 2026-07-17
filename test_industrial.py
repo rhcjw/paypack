@@ -31,7 +31,7 @@ print("   ✅ 所有模块导入成功")
 print("=" * 50)
 print("2/6  Signer 签名器")
 
-TEST_KEY = "0x6fd8aeba2983ea3eade0f68165376631d285827e74bcb69282c6783d6fb1b356"
+TEST_KEY = "0x你的ETH私钥"
 EXPECTED_ADDRESS = "0x9cbF3Ca5185Ca55C804c2c4b726De212A17734F8"
 
 # Signer ABC 不能直接实例化
