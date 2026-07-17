@@ -341,6 +341,7 @@ PayPack stays neutral by design — open to all platforms, all channels. No stra
 | PayPack Cloud | https://rhcjw.com/pay | 云服务 |
 | Dify Plugin | [paypack-0.1.2.difypkg](https://github.com/rhcjw/paypack/releases/tag/v0.1.2) | Dify 插件 |
 | Quick Start | [QUICKSTART.md](./QUICKSTART.md) | 快速入门 |
+| 🆕 Developer Dashboard | https://rhcjw.com/pay/dashboard | 注册 / 充值 / API Key |
 
 ---
 
