@@ -31,6 +31,7 @@ DEFAULT_NETWORKS = {
             "https://base-sepolia-rpc.publicnode.com",
         ],
         "usdc_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "usdt_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",  # sepolia testnet USDT 同地址
         "native_currency": "ETH",
         "explorer": "https://sepolia.basescan.org",
     },
@@ -43,6 +44,7 @@ DEFAULT_NETWORKS = {
             "https://base-rpc.publicnode.com",
         ],
         "usdc_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "usdt_address": "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
         "native_currency": "ETH",
         "explorer": "https://basescan.org",
     },
@@ -51,6 +53,7 @@ DEFAULT_NETWORKS = {
         "rpc_url": "https://mainnet.infura.io/v3/YOUR_INFURA_KEY",
         "rpc_urls": [],
         "usdc_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "usdt_address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "native_currency": "ETH",
         "explorer": "https://etherscan.io",
     },
@@ -62,6 +65,7 @@ DEFAULT_NETWORKS = {
             "https://polygon-bor.publicnode.com",
         ],
         "usdc_address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        "usdt_address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
         "native_currency": "POL",
         "explorer": "https://polygonscan.com",
     },
@@ -73,6 +77,7 @@ DEFAULT_NETWORKS = {
             "https://arbitrum-one.publicnode.com",
         ],
         "usdc_address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "usdt_address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
         "native_currency": "ETH",
         "explorer": "https://arbiscan.io",
     },
@@ -209,9 +214,20 @@ class AgentPay:
             except Exception:
                 self.usdc_contract = None
                 self.usdc_decimals = 6
+            try:
+                self.usdt_contract = self.w3.eth.contract(
+                    address=Web3.to_checksum_address(self.usdt_address),
+                    abi=USDC_ABI,  # USDT 也是 ERC-20，ABI 通用
+                )
+                self.usdt_decimals = self.usdt_contract.functions.decimals().call()
+            except Exception:
+                self.usdt_contract = None
+                self.usdt_decimals = 6
         else:
             self.usdc_contract = None
             self.usdc_decimals = 6
+            self.usdt_contract = None
+            self.usdt_decimals = 6
         self._bundler_url = bundler_rpc_url
 
     def _init_network(self, network, rpc_urls=None):
@@ -221,6 +237,7 @@ class AgentPay:
             self.chain_id = 0
             self.rpc_url = ""
             self.usdc_address = "0x0000000000000000000000000000000000000000"
+            self.usdt_address = "0x0000000000000000000000000000000000000000"
             self.native_currency = "CNY"
             self.explorer = ""
             self.w3 = None
@@ -235,6 +252,7 @@ class AgentPay:
             self.chain_id = config["chain_id"]
             self.rpc_url = config["rpc_url"]
             self.usdc_address = config["usdc_address"]
+            self.usdt_address = config.get("usdt_address", config.get("usdc_address"))
             self.native_currency = config.get("native_currency", "ETH")
             self.explorer = config.get("explorer", "")
             fallback_urls = rpc_urls or config.get("rpc_urls", [])
@@ -245,6 +263,7 @@ class AgentPay:
             self.chain_id = network.get("chain_id")
             self.rpc_url = network.get("rpc_url")
             self.usdc_address = network.get("usdc_address")
+            self.usdt_address = network.get("usdt_address", network.get("usdc_address"))
             self.native_currency = network.get("native_currency", "ETH")
             self.explorer = network.get("explorer", "")
             fallback_urls = rpc_urls or network.get("rpc_urls", [self.rpc_url])
@@ -277,9 +296,11 @@ class AgentPay:
     def _ensure_sufficient_balance(self, currency: str, amount: float):
         if currency.upper() == "CNY":
             return  # 支付宝自身保证余额
-        if currency.upper() == "USDC":
-            balance_raw = self.usdc_contract.functions.balanceOf(self.address).call()
-            balance = balance_raw / (10 ** self.usdc_decimals)
+        if currency.upper() in ("USDC", "USDT"):
+            contract = self.usdt_contract if currency.upper() == "USDT" else self.usdc_contract
+            decimals = self.usdt_decimals if currency.upper() == "USDT" else self.usdc_decimals
+            balance_raw = contract.functions.balanceOf(self.address).call()
+            balance = balance_raw / (10 ** decimals)
         else:
             balance_raw = self.w3.eth.get_balance(self.address)
             balance = self.w3.from_wei(balance_raw, "ether")
@@ -350,10 +371,13 @@ class AgentPay:
                    "explorer_link": f"{self.explorer}/tx/{r['tx_hash']}" if self.explorer else None})
         return r
 
-    def _execute_usdc_transfer(self, to_address, amount_usdc):
+    def _execute_erc20_transfer(self, to_address, amount, currency="USDC"):
+        """执行 ERC-20 转账，支持 USDC 和 USDT"""
         to_address = Web3.to_checksum_address(to_address)
-        amount_raw = int(amount_usdc * (10 ** self.usdc_decimals))
-        txn = self.usdc_contract.functions.transfer(to_address, amount_raw).build_transaction({
+        contract = self.usdt_contract if currency == "USDT" else self.usdc_contract
+        decimals = self.usdt_decimals if currency == "USDT" else self.usdc_decimals
+        amount_raw = int(amount * (10 ** decimals))
+        txn = contract.functions.transfer(to_address, amount_raw).build_transaction({
             "from": self.address, "chainId": self.chain_id, "gas": 100000,
             "nonce": self.w3.eth.get_transaction_count(self.address),
         })
@@ -364,7 +388,7 @@ class AgentPay:
         except Exception:
             txn["gasPrice"] = self.w3.eth.gas_price
         r = self._sign_and_broadcast(txn)
-        r.update({"to": to_address, "amount": amount_usdc, "currency": "USDC",
+        r.update({"to": to_address, "amount": amount, "currency": currency,
                    "network": self.network_name,
                    "explorer_link": f"{self.explorer}/tx/{r['tx_hash']}" if self.explorer else None})
         return r
@@ -436,8 +460,8 @@ class AgentPay:
                 tx = self._execute_wechat_transfer(to, amount, **kwargs)
             else:
                 tx = self._execute_alipay_transfer(to, amount, **kwargs)
-        elif currency.upper() == "USDC":
-            tx = self._execute_usdc_transfer(to, amount)
+        elif currency.upper() in ("USDC", "USDT"):
+            tx = self._execute_erc20_transfer(to, amount, currency.upper())
         else:
             tx = self._execute_eth_transfer(to, amount)
 
