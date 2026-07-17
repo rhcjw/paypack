@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="langchain-paypack",  # 改为 langchain- 前缀，更符合搜索习惯
-    version="0.7.7",           # Deprecation notice added, point to paypack-langchain
+    version="0.7.8",           # Deprecation notice added, point to paypack-langchain
     description="LangChain tool for PayPack: AI Agent autonomous payments (HTTP 402, x402, AP2)",
     long_description=long_description,
     long_description_content_type="text/markdown",
