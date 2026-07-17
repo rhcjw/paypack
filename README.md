@@ -1,10 +1,14 @@
-> ⚠️ **This package is legacy (local-signer mode).** For Cloud mode: **[paypack-langchain](https://pypi.org/project/paypack-langchain/) · PyPI** — `pip install paypack-langchain`
->
-> 此包为旧版（本地签名模式）。Cloud 版请使用 `paypack-langchain`。
-
 # langchain-paypack: 让 AI Agent 拥有支付能力
 
-> 🚀 **在线控制台已上线：[rhcjw.com/pay/dashboard](https://rhcjw.com/pay/dashboard)** — 注册即获 API Key，支付宝/微信充值，30 秒接入。
+> 🚀 **[开发者控制台](https://rhcjw.com/pay/dashboard)** — 注册即获 API Key，支付宝/微信充值，30 秒接入。
+>
+> **三种用法，按需选择：**
+>
+> | 方式 | 适合谁 | 费用 |
+> |------|--------|------|
+> | 🆓 **开源 SDK** `pip install langchain-paypack` | 自己管私钥的开发者 | **免费** |
+> | ☁️ **托管 Cloud** [rhcjw.com/pay/dashboard](https://rhcjw.com/pay/dashboard) | 不想管私钥、直接用 | 充值预付费 |
+> | 🔧 **私有部署** 本仓库完整代码 | 企业自建支付系统 | 自己运维 |
 
 **专为 AI Agent 设计的通用支付中间件。一行代码接入支付宝、微信支付及加密货币网络，打破生态壁垒，让 AI 自主完成跨平台交易。**
 
