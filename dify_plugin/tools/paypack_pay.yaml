@@ -6,14 +6,13 @@ identity:
   description:
     en_US: |
       Make a payment using PayPack. Supports:
+      - Cloud API (recommended): Just set API Key → Alipay/WeChat QR code
       - USDC/ETH on-chain (Base, Ethereum, Polygon, Arbitrum)
-      - CNY via Alipay or WeChat Pay
-      
-      For Alipay: set currency="CNY" and provide Alipay user ID.
-      For WeChat: set currency="CNY" (add "wechat" in subject to prefer WeChat).
+      - CNY via Alipay or WeChat Pay (local signing)
+
+      For Cloud: set currency="CNY", channel="alipay" or "wechat".
       For crypto: set currency="USDC" or "ETH" and provide wallet address.
-      
-      Auto-routes to the correct channel. Configure all 3 channels in one plugin instance.
+      Auto-routes to available channel.
 parameters:
   - name: recipient
     type: string
@@ -65,3 +64,21 @@ parameters:
       en_US: Description of what the payment is for
     llm_description: A short description of what this payment is for
     form: llm
+
+  - name: channel
+    type: string
+    required: false
+    default: alipay
+    label:
+      en_US: Payment Channel (Cloud mode)
+    human_description:
+      en_US: "alipay or wechat. Only for Cloud API mode."
+    llm_description: Payment channel for Cloud mode. Use "alipay" or "wechat".
+    form: llm
+    options:
+      - value: alipay
+        label:
+          en_US: Alipay
+      - value: wechat
+        label:
+          en_US: WeChat Pay

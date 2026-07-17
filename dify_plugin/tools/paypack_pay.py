@@ -1,12 +1,12 @@
-"""
+""" 
 PayPack Pay Tool — Dify integration core.
 
 AI Agent uses this tool to make payments.
-Auto-routes to the correct channel based on currency:
-- USDC / ETH  → Crypto (on-chain)
-- CNY + alipay credentials → Alipay
-- CNY + wechat credentials  → WeChat Pay
-All channels can be configured at once in a single plugin instance.
+Auto-routes to the correct channel:
+- Cloud mode (recommended) → PayPack Cloud API → Alipay/WeChat QR code
+- USDC / ETH → Crypto (on-chain)
+- CNY + alipay credentials → Alipay (local signing)
+- CNY + wechat credentials → WeChat Pay (local signing)
 """
 import json
 import os
@@ -24,11 +24,12 @@ class PaypackPayTool(Tool):
         tool_parameters: Dict[str, Any],
         session: Optional[Session] = None,
     ) -> list[ToolInvokeMessage]:
-        """Execute payment. Auto-routes by currency."""
+        """Execute payment. Auto-routes by currency and available credentials."""
         recipient = tool_parameters.get("recipient", "")
         amount = float(tool_parameters.get("amount", 0))
-        currency = tool_parameters.get("currency", "USDC").upper()
+        currency = tool_parameters.get("currency", "CNY").upper()
         subject = tool_parameters.get("subject", "AI Agent Payment")
+        channel = tool_parameters.get("channel", "").lower()
 
         if amount <= 0:
             return [self.create_text_message("Error: Amount must be greater than 0")]
@@ -36,9 +37,17 @@ class PaypackPayTool(Tool):
         credentials = self.runtime.credentials or {}
 
         try:
+            # Priority 1: Cloud mode (simplest — just API Key)
+            has_cloud = bool(credentials.get("paypack_api_key"))
+            if has_cloud and currency == "CNY":
+                return self._pay_cloud(amount, subject, channel or "alipay", credentials)
+
+            # Priority 2: Crypto (on-chain)
             if currency in ("USDC", "ETH"):
                 return self._pay_crypto(recipient, amount, currency, credentials)
-            elif currency == "CNY":
+
+            # Priority 3: Local Alipay signing
+            if currency == "CNY":
                 has_alipay = bool(credentials.get("alipay_app_id"))
                 has_wechat = bool(credentials.get("wechat_mchid"))
                 if has_alipay and not has_wechat:
@@ -46,19 +55,77 @@ class PaypackPayTool(Tool):
                 elif has_wechat and not has_alipay:
                     return self._pay_wechat(recipient, amount, subject, credentials)
                 elif has_alipay and has_wechat:
-                    # Both configured — check subject for hint
                     if subject and "wechat" in subject.lower():
                         return self._pay_wechat(recipient, amount, subject, credentials)
                     return self._pay_alipay(recipient, amount, subject, credentials)
                 else:
                     return [self.create_text_message(
-                        "Error: CNY selected but neither Alipay nor WeChat Pay configured. "
-                        "Set up Alipay or WeChat Pay in plugin settings."
+                        "Error: No payment channel configured. "
+                        "Get a free API Key at https://rhcjw.com/pay/dashboard and set paypack_api_key in plugin credentials."
                     )]
             else:
                 return [self.create_text_message(f"Unsupported currency '{currency}'. Use USDC, ETH, or CNY.")]
         except Exception as e:
             return [self.create_text_message(f"Payment failed: {str(e)}")]
+
+    # ── Cloud API (recommended) ──────────────────────────
+
+    def _pay_cloud(
+        self, amount: float, subject: str, channel: str, creds: Dict[str, Any]
+    ) -> list[ToolInvokeMessage]:
+        """Call PayPack Cloud API to create payment order. Returns QR code URL."""
+        import requests
+
+        cloud_url = (creds.get("paypack_cloud_url") or "https://rhcjw.com/pay").rstrip("/")
+        api_key = creds.get("paypack_api_key")
+
+        if not api_key:
+            return [self.create_text_message(
+                "Error: Cloud API Key not set. Get one at https://rhcjw.com/pay/dashboard"
+            )]
+
+        try:
+            resp = requests.post(
+                f"{cloud_url}/v1/pay",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                },
+                json={
+                    "amount": amount,
+                    "subject": subject,
+                    "channel": channel or "alipay",
+                    "currency": "CNY",
+                },
+                timeout=15,
+            )
+
+            if resp.status_code == 402:
+                return [self.create_text_message(
+                    "Error: Insufficient balance. Please top up at https://rhcjw.com/pay/dashboard"
+                )]
+            if resp.status_code != 200:
+                err = resp.json().get("error", resp.text)
+                return [self.create_text_message(f"Error: {err}")]
+
+            data = resp.json()
+            return [
+                self.create_text_message(json.dumps({
+                    "channel": channel or "alipay",
+                    "status": "pending",
+                    "currency": "CNY",
+                    "amount": amount,
+                    "subject": subject,
+                    "order_id": data.get("order_id"),
+                    "pay_url": data.get("pay_url"),
+                    "qr_code": data.get("qr_code"),
+                    "instruction": "Show the QR code to the user for payment. Use qr_code URL to generate a QR image.",
+                }, ensure_ascii=False, indent=2))
+            ]
+        except requests.ConnectionError:
+            return [self.create_text_message(
+                f"Error: Cannot connect to PayPack Cloud at {cloud_url}. Is the service running?"
+            )]
 
     # ── Crypto ──────────────────────────────────────────
 

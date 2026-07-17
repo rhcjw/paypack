@@ -10,6 +10,27 @@ identity:
     - blockchain
     - tool
 credentials_for_provider:
+  # --- Cloud API (recommended, simplest) ---
+  paypack_cloud_url:
+    type: text-input
+    required: false
+    default: "https://rhcjw.com/pay"
+    label:
+      en_US: Cloud API URL
+    placeholder:
+      en_US: https://rhcjw.com/pay
+    help:
+      en_US: PayPack Cloud API address. Uses Cloud-managed Alipay/WeChat channels. No private key needed.
+  paypack_api_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: Cloud API Key
+    placeholder:
+      en_US: ppk_xxxxxxxx...
+    help:
+      en_US: Get your API key at rhcjw.com/pay/dashboard after registration.
+
   # --- Crypto (USDC/ETH) ---
   crypto_private_key:
     type: secret-input

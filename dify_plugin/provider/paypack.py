@@ -14,14 +14,15 @@ class PaypackProvider(ToolProvider):
         Validate user-provided credentials. Supports all channels in one config.
         At least one payment channel must be configured.
         """
+        has_cloud = bool(credentials.get("paypack_api_key"))
         has_crypto = bool(credentials.get("crypto_private_key"))
         has_alipay = bool(credentials.get("alipay_app_id") and credentials.get("alipay_private_key"))
         has_wechat = bool(credentials.get("wechat_mchid") and credentials.get("wechat_private_key"))
 
-        if not has_crypto and not has_alipay and not has_wechat:
+        if not has_cloud and not has_crypto and not has_alipay and not has_wechat:
             raise ToolProviderCredentialValidationError(
                 "At least one payment channel must be configured. "
-                "Fill in Crypto, Alipay, or WeChat Pay credentials."
+                "Easiest: fill in Cloud API Key (get it at rhcjw.com/pay/dashboard)."
             )
 
         if has_alipay:
