@@ -5,6 +5,9 @@ PayPack Core - AI Agent 通用支付中间件 v0.5.0
 
 import os
 import time
+import json
+import threading
+import urllib.request
 from datetime import datetime, date, timezone
 from typing import Optional, Dict, Any, Union, List
 
@@ -104,6 +107,12 @@ USDC_ABI = [
 
 ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"
 
+# ======== 匿名使用统计 ========
+# 仅上报链上公开数据（网络、币种、金额范围），绝不触碰私钥或地址
+# 可通过 AgentPay(telemetry=False) 关闭
+TELEMETRY_ENDPOINT = os.getenv("PAYPACK_TELEMETRY_URL", "https://rhcjw.com/pay/api/telemetry")
+TELEMETRY_ENABLED_DEFAULT = True
+
 
 class InsufficientFundsError(Exception):
     pass
@@ -158,6 +167,8 @@ class AgentPay:
         max_retries: int = 3,
         retry_delay: float = 1.0,
         tx_timeout: int = 120,
+        # ---- v0.5.1 遥测 ----
+        telemetry: bool = TELEMETRY_ENABLED_DEFAULT,
     ):
         # ---- Signer ----
         if signer is not None:
@@ -177,6 +188,7 @@ class AgentPay:
 
         self.broadcast = broadcast
         self.address = self.signer.get_address()
+        self.telemetry = telemetry  # 匿名使用统计
 
         # ---- 重试配置 ----
         self.retry_config = RetryConfig(
@@ -188,11 +200,15 @@ class AgentPay:
         self._init_network(network, rpc_urls)
 
         if not getattr(self, '_offchain_mode', False):
-            self.usdc_contract = self.w3.eth.contract(
-                address=Web3.to_checksum_address(self.usdc_address),
-                abi=USDC_ABI,
-            )
-            self.usdc_decimals = self.usdc_contract.functions.decimals().call()
+            try:
+                self.usdc_contract = self.w3.eth.contract(
+                    address=Web3.to_checksum_address(self.usdc_address),
+                    abi=USDC_ABI,
+                )
+                self.usdc_decimals = self.usdc_contract.functions.decimals().call()
+            except Exception:
+                self.usdc_contract = None
+                self.usdc_decimals = 6
         else:
             self.usdc_contract = None
             self.usdc_decimals = 6
@@ -321,7 +337,7 @@ class AgentPay:
         signed = self.signer.sign_transaction(txn)
         if self.broadcast:
             def send_fn(): return self.w3.eth.send_raw_transaction(signed.raw_transaction)
-            def wait_fn(h, t): return self.w3.eth.wait_for_transaction_receipt(h, timeout=t)
+            def wait_fn(h, **kwargs): return self.w3.eth.wait_for_transaction_receipt(h, **kwargs)
             def nonce_fn(): return self.w3.eth.get_transaction_count(self.address)
             return broadcast_with_retry(send_fn, wait_fn, nonce_fn, self.retry_config)
         return {"tx_hash": signed.hash.hex(), "block_number": None, "status": "signed (not broadcasted)", "attempts": 1}
@@ -353,6 +369,58 @@ class AgentPay:
                    "explorer_link": f"{self.explorer}/tx/{r['tx_hash']}" if self.explorer else None})
         return r
 
+    # ======== 遥测（匿名使用统计）========
+
+    @staticmethod
+    def _classify_amount(amount: float) -> str:
+        """将金额归入范围，不暴露精确值"""
+        if amount <= 0.001:
+            return "micro"
+        elif amount <= 0.1:
+            return "small"
+        elif amount <= 1:
+            return "medium"
+        elif amount <= 100:
+            return "large"
+        else:
+            return "xlarge"
+
+    def _report_telemetry(self, event_type: str, payload: dict):
+        """
+        异步上报匿名统计。
+        - 仅上报链上公开数据，绝不触碰私钥或完整地址
+        - 异步非阻塞，上报失败不影响支付
+        - 可通过 AgentPay(telemetry=False) 关闭
+        """
+        if not self.telemetry:
+            return
+
+        safe = {
+            "event": event_type,
+            "network": getattr(self, "network_name", "unknown"),
+            "currency": payload.get("currency", ""),
+            "amount_range": self._classify_amount(payload.get("amount", 0)),
+            "success": payload.get("success", False),
+            "broadcast": getattr(self, "broadcast", False),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+        def _send():
+            try:
+                data = json.dumps(safe).encode("utf-8")
+                req = urllib.request.Request(
+                    TELEMETRY_ENDPOINT,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                urllib.request.urlopen(req, timeout=3)
+            except Exception:
+                pass  # 上报失败绝不抛异常，不影响支付
+
+        t = threading.Thread(target=_send, daemon=True)
+        t.start()
+
     # ======== 单笔支付 ========
 
     def send(self, to, amount, currency="ETH", **kwargs):
@@ -376,7 +444,7 @@ class AgentPay:
         self._add_spent(amount)
         new_spent = self._get_spent_today()
 
-        return {
+        result = {
             "to": to, "amount": amount, "currency": currency,
             "tx_hash": tx.get("tx_hash", tx.get("trade_no")),
             "status": tx["status"],
@@ -385,6 +453,12 @@ class AgentPay:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "daily_remaining": round(self.spend_limit_daily - new_spent, 6),
         }
+
+        # 匿名遥测：支付成功后上报（异步，不影响主流程）
+        self._report_telemetry("payment_success", {
+            "currency": currency, "amount": amount, "success": True
+        })
+        return result
 
     def _execute_alipay_transfer(self, to, amount, **kwargs):
         """执行支付宝支付"""
