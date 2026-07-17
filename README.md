@@ -349,6 +349,10 @@ PayPack stays neutral by design — open to all platforms, all channels. No stra
 
 ---
 
+**Keywords:** `HTTP 402` `x402` `AP2` `AI agent payment` `nano payment` `agent pay` `AI 支付中间件` `USDC` `stablecoin` `LangChain Pay`
+
+---
+
 ## Contributing | 贡献
 
 Star the repo, open an issue, or mention PayPack in Dify/Coze communities — every bit helps.
