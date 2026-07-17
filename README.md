@@ -4,6 +4,8 @@
 
 # langchain-paypack: 让 AI Agent 拥有支付能力
 
+> 🚀 **在线控制台已上线：[rhcjw.com/pay/dashboard](https://rhcjw.com/pay/dashboard)** — 注册即获 API Key，支付宝/微信充值，30 秒接入。
+
 **专为 AI Agent 设计的通用支付中间件。一行代码接入支付宝、微信支付及加密货币网络，打破生态壁垒，让 AI 自主完成跨平台交易。**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
