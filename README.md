@@ -20,6 +20,18 @@
 
 ---
 
+## 许可与版本 | License & Releases
+
+- **早期社区版**：**Apache-2.0 开源** — 本仓库 / [Gitee 镜像](https://gitee.com/rhcjw_com/paypack) / PyPI [`langchain-paypack`](https://pypi.org/project/langchain-paypack/)。可自由使用、修改与再分发，需保留版权与许可声明。
+- **当前及后续迭代版本**：**闭源**，用于「数字基地」建设，**不随本仓库发布**。
+- **商业模块**（如微信支付模块 `paypack_wechat`）：需 License Key。
+- **云托管**（[PayPack Cloud](https://rhcjw.com/pay)）：由服务方单独提供可用性、计费与支持条款。
+
+> 口径说明：**早期社区版开源**与**后续迭代闭源**并存——开源部分（Apache-2.0）可自由使用；闭源迭代与云服务条款各自独立。
+> 请勿把本项目描述为"完全开源"；准确说法是"**早期社区版 Apache-2.0 开源，当前与后续迭代版本闭源**"。
+
+**一句话定义（与官网 / JSON-LD / llms.txt 逐字一致）：** PayPack 是一款让 AI Agent 自动付款的支付中间件（middleware）：同时支持 x402/AP2 链上支付（USDC/ETH）与支付宝、微信的人民币支付。
+
 ## 为什么是 PayPack？| Why PayPack?
 
 **PayPack is the ONLY payment middleware that supports x402/AP2 crypto payments AND Alipay/WeChat fiat payments.**
@@ -33,7 +45,9 @@
 | **Stripe Agent Toolkit** | Stripe (credit card) | ❌ Foreign cards only |
 | **Nevermined** | x402 protocol | ❌ No Alipay/WeChat |
 | **Privy** | Wallet infra | ❌ No Alipay/WeChat |
-| **PayPack** ✅ | x402/AP2 + USDC/ETH + **Alipay** + **WeChat Pay** | ✅ Open-source & free |
+| **MPP / mppx** (Stripe + Tempo) | 402 握手 + 卡网；含订阅/流式计费/取消/对账 | ❌ No Alipay/WeChat |
+| **x402 official middleware** (x402-express / next / axum) | 仅链上稳定币 | ❌ No Alipay/WeChat |
+| **PayPack** ✅ | x402/AP2 + USDC/ETH + **Alipay** + **WeChat Pay** | ✅ 早期社区版 Apache-2.0 开源 |
 | **PayPack Cloud** ☁️ | **Managed payment API — Alipay + WeChat Pay** | ✅ Live at [rhcjw.com/pay](https://rhcjw.com/pay) |
 
 While everyone asks "how does AI pay with USDC?", PayPack asks "how does AI pay with Alipay and WeChat?".
@@ -319,6 +333,16 @@ These developers are PayPack's real users. | 这些平台的开发者，才是 P
 
 ---
 
+## 我们在补的空档 | The gap we fill
+
+现在的 Agent 支付赛道分成两拨：**协议厂商做协议**（x402、MPP、ACP、AP2、TAP、UCP），**平台厂商做自家闭环**（支付宝 AI 付 / AI 收、微信、Stripe）。两边都没人系统性地做**跨协议的治理与策略平面**：
+
+- 统一的**预算上限与熔断**（跨链上/法币/多协议）
+- 统一的**审计追踪**（每笔 Agent 支出可回溯到具体任务）
+- **Agent 身份与授权**（谁授权了这个 Agent 花多少钱、在什么范围）
+
+PayPack 的 `AgentPay` 已经提供日支出上限、余额检查、可审计收据（见 Features）；**跨协议的统一策略/治理平面是我们的下一步方向**（见 Roadmap v2.0）。这一层不是再包一个协议，而是把不同协议、不同渠道的支出管起来。
+
 ## Roadmap | 路线图
 
 | Phase | Milestone | 里程碑 | Status |
@@ -360,4 +384,6 @@ Star ⭐、提 Issue、或者在 Dify/Coze 社区里提到 PayPack，都是贡�
 
 ## License | 许可证
 
-Apache License 2.0. See [LICENSE](LICENSE).
+- **早期社区版**：Apache License 2.0，见 [LICENSE](LICENSE)。
+- **当前及后续迭代版本**：闭源，用于「数字基地」建设，不随本仓库发布；商业模块需 License Key。
+
